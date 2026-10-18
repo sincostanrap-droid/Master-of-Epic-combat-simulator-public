@@ -37,7 +37,7 @@ python -m http.server 8000 --bind 127.0.0.1 --directory .local-preview/my-pages-
 
 ## 公開・保守
 
-[公開手順](release/README.md)を参照してください。GitHub Pagesには `release/web-files.txt` に列挙したファイルだけを配信し、`release/web-hashes.json` で内容を検証します。実行に必要な生成データは含め、解析資料・生データ・個人の登録構成は含めません。
+[公開版の更新・公開手順](release/README.md)に、更新前の保全、掲載ファイルの確認、限定検証、手動公開、不具合時の戻し方をまとめています。GitHub Pagesには `release/web-files.txt` に列挙したファイルだけを配信し、`release/web-hashes.json` で内容を検証します。実行に必要な生成データは含め、解析資料・生データ・個人の登録構成は含めません。
 
 外部DB取得用のCloudflare Workerは別サービスです。現在の画面にはURL取得用入力欄がありません。装備カタログの通常利用は同梱データを使います。
 
