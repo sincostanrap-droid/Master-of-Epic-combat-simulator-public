@@ -2,9 +2,9 @@
 
 Master of Epic の非公式計算ツールです。ブラウザ上で技・魔法、装備、Buffの条件を入力し、ダメージ・回復量・能力補正・持続時間などを確認できます。
 
-公開準備中の版：**v1.24.25**
+現在の版：**v1.24.25**
 
-[ブラウザ版](https://sincostanrap-droid.github.io/Master-of-Epic-web-damage-tool/)
+[ブラウザ版](https://sincostanrap-droid.github.io/Master-of-Epic-combat-simulator-public/)
 
 ## 主な機能
 
