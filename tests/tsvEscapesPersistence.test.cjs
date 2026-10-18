@@ -1,0 +1,26 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {context,json,root}=require('../tools/benchmark-optimizer.cjs');
+const p=context(root,{data:false});p.structuredClone=structuredClone;
+vm.runInContext(fs.readFileSync('src/storage/importExport.js','utf8'),p);
+const samples=['','通常の文字','一行目\n二行目','列1\t列2',String.raw`C:\new\test`,String.raw`\n\t\\`, '改行\nとタブ\tと'+String.raw`\n\t\q`,JSON.stringify({text:'一行目\n二行目\t'+String.raw`C:\new\test`})];
+for(const text of samples)assert.equal(p.tsvUnescape(p.tsvEscape(text)),text);
+assert.equal(p.tsvUnescape(String.raw`\q`),String.raw`\q`,'unknown escapes remain literal');
+const st=json(vm.runInContext('DEFAULT_STATE()',p));
+const records='魔力上昇｜Buff｜10｜魔力｜10｜ポイント\n命中上昇｜Buff｜20｜命中｜5｜ポイント';
+st.combatTrial={version:1,selected:'physical:ハッキングバイト',fields:{combatCatalogTransferRecords:records,combatCatalogSkill:'100'},skills:{},generatedSkills:{},requestCounts:{}};
+st.composite=[{enabled:true,name:'複数行の効果詳細',flatAttack:12.345678,note:samples[6],catalogInputs:{skill:100,combatTrialSource:{inputs:{transferRecords:records,path:String.raw`C:\new\test`}}},catalogNumeric:{version:1,values:[{name:'攻撃力',value:12.345678,note:'一行目\n二行目\t補足'}],times:[],pending:[{name:'確認中',reason:'条件A\n条件B '+String.raw`\n`}]}}];
+const cfg={inputs:{attackType:'attack',str:100,spirit:100,targetAC:100},state:st},before=JSON.stringify(cfg);
+const loaded=p.parseConfigFromTsv(p.serializeConfigAsTsv(cfg));
+assert.deepEqual(json(loaded.state.combatTrial),st.combatTrial);
+for(const key of ['note','catalogInputs','catalogNumeric'])assert.deepEqual(json(loaded.state.composite[0][key]),st.composite[0][key],key);
+const buffRows=p.compositeFromTsvRows(p.parseTsvSections(p.makeTsvSection('composite',p.compositeOnlyHeaders(),p.compositeOnlyRows(st.composite))).composite.rows);
+for(const key of ['note','catalogInputs','catalogNumeric'])assert.deepEqual(json(buffRows[0][key]),st.composite[0][key],'Buff-only '+key);
+assert.equal(loaded.state.composite[0].flatAttack,12.345678);
+// Reload through the real config application and capture the autosaved inputs.
+let trial=null,saved;p.byId=()=>null;
+Object.assign(p,{setInputs:()=>{},renderAll:()=>{},syncSkillSimToCalcInputs:()=>{},setImportStatus:()=>{},MOE_COMBAT_TRIAL_SETTINGS:{restore:x=>{trial=json(x);}},calc:()=>{saved={state:json(vm.runInContext('state',p)),inputs:cfg.inputs};saved.state.combatTrial=trial;}});
+assert.equal(p.applyConfig(loaded),true);assert.equal(p.applyConfig(saved),true);
+assert.deepEqual(saved.state.combatTrial,st.combatTrial);
+for(const key of ['note','catalogInputs','catalogNumeric'])assert.deepEqual(saved.state.composite[0][key],st.composite[0][key],'reload '+key);
+assert.equal(JSON.stringify(cfg),before,'source preserved');
+console.log('TSV escaping: multiline conditions/details, tabs, literal escapes, nested JSON, full/Buff-only TSV and reload OK');

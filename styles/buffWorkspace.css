@@ -1,0 +1,24 @@
+/* Buff registration: name, effects and duration stay readable at a glance. */
+#compositeBuffTable { border-collapse:separate; border-spacing:0 8px; }
+#compositeBuffTable .compactCompositeMainRow td { padding:12px 8px; vertical-align:top; background:var(--panel-bg, #fff); border-top:1px solid #d8dee8; border-bottom:1px solid #d8dee8; }
+#compositeBuffTable .compactCompositeMainRow td:first-child { border-left:1px solid #d8dee8; border-radius:8px 0 0 8px; }
+#compositeBuffTable .compactCompositeMainRow td:last-child { border-right:1px solid #d8dee8; border-radius:0 8px 8px 0; }
+#compositeBuffTable tbody .compactCompositeMainRow .compactCompositeSummaryCell { min-width:300px; padding:12px; }
+#compositeBuffTable .compactCompositeNameLine { flex-wrap:wrap; gap:8px; }
+#compositeBuffTable .compactCompositeNameLine input { font-size:15px; padding:7px 9px; }
+#compositeBuffTable .compactCompositeEffectSummary { font-size:13px; line-height:1.7; margin:7px 0; color:var(--text, #263342); }
+#compositeBuffTable .compactCompositeMainRow input[type=checkbox] { width:18px; height:18px; margin-top:10px; }
+#compositeBuffTable .compactCompositeSourceBadge { font-size:11px; padding:3px 7px; }
+#compositeBuffTable .compactCompositeNoteCell input { min-width:130px; }
+.buffDurationBadge { display:inline-block; margin:5px 0; padding:4px 9px; border:1px solid #c4d8e9; border-radius:6px; background:#eff6fc; color:#244560; font-size:13px; font-weight:600; }
+.compactCompositeInfo { margin-top:6px; font-size:13px; }
+.compactCompositeInfo summary { cursor:pointer; color:#3d566e; width:max-content; padding:3px 0; }
+.reviewedBuffGameInfo { white-space:pre-line; font-size:13px; line-height:1.7; margin:10px 0; }
+#reviewedBuffCatalogOverlay .reviewedBuffCatalogCard { padding:13px 15px; text-align:left; }
+#reviewedBuffCatalogOverlay .reviewedBuffCatalogCardTitle { font-size:15px; line-height:1.5; }
+#reviewedBuffCatalogOverlay .reviewedBuffCatalogCardEffect { font-size:13px; line-height:1.6; margin-top:7px; }
+#reviewedBuffCatalogOverlay .reviewedBuffCatalogEffect { padding:12px; font-size:14px; line-height:1.8; background:#f0f6fc; color:#263342; border-radius:8px; }
+@media (max-width:700px) { #compositeBuffTable tbody .compactCompositeMainRow .compactCompositeSummaryCell { min-width:240px; } }
+
+/* Keep numeric effects separate from registration limitations. */
+.reviewedBuffCatalogEffect, .reviewedBuffCatalogCardEffect { white-space:pre-line; }

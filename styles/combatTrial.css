@@ -1,0 +1,116 @@
+/* Only the combat-trial workspace. Existing calculation and storage UI stay scoped. */
+[data-tab-panel="combatTrial"] { color: #223047; }
+[data-tab-panel="combatTrial"] > .tabSectionHint { display: none; }
+.combatTrialWorkspace { --trial-accent: #365f9c; --trial-border: #dce4ef; }
+.combatTrialHero { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 2px 18px; }
+.combatTrialEyebrow { margin: 0 0 6px; color: #62738c; font-size: 11px; letter-spacing: .14em; font-weight: 700; }
+.combatTrialEyebrow span { padding: 2px 6px; margin-left: 5px; border-radius: 4px; color: #365f9c; background: #e8eef7; }
+.combatTrialHero h2 { margin: 0; padding: 0; border: 0; font-size: 25px; letter-spacing: .02em; }
+.combatTrialHero p:last-child { margin: 6px 0 0; color: #66758b; font-size: 13px; }
+.combatTrialCoverage { flex-shrink: 0; border: 1px solid var(--trial-border); border-radius: 20px; padding: 7px 12px; background: #fff; color: #596d87; font-size: 12px; }
+.combatTrialLayout { display: grid; grid-template-columns: minmax(290px, 360px) minmax(0, 1fr); grid-template-areas: "setup results" "extras results"; align-items: start; gap: 16px; }
+.combatTrialSetup { grid-area: setup; }
+.combatTrialResults { grid-area: results; }
+.combatTrialExtras { grid-area: extras; min-width: 0; }
+.combatTrialCard { min-width: 0; border: 1px solid var(--trial-border); border-radius: 14px; padding: 20px; background: #fff; box-shadow: 0 3px 12px #23365005; }
+.combatTrialCard h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; font-size: 16px; border: 0; }
+.combatTrialStep { display: inline-grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; background: #edf2f9; color: var(--trial-accent); border-radius: 7px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.combatTrialDivider { height: 1px; background: #e9edf3; margin: 22px 0; }
+.combatTrialWorkspace .combatTrialFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.combatTrialWorkspace label { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 0; font-size: 12px; color: #516178; }
+.combatTrialWorkspace input:not([type="checkbox"]), .combatTrialWorkspace select, .combatTrialWorkspace textarea { width: 100%; max-width: 100%; border: 1px solid #cdd7e5; border-radius: 7px; padding: 9px 10px; font-size: 14px; background: #fff; color: #223047; }
+.combatTrialWorkspace input[type="number"] { text-align: left; }
+.combatTrialWorkspace input:focus-visible, .combatTrialWorkspace select:focus-visible, .combatTrialWorkspace textarea:focus-visible { outline: 2px solid #365f9c; outline-offset: 2px; }
+.combatTrialSelection { display: grid; gap: 14px; }
+.combatTrialSelection input { background: #f8fafc !important; }
+.combatTrialSelection select { font-weight: 650; }
+.combatTrialBasic label:last-child { grid-column: 1 / -1; }
+.combatTrialExtraSkills:not(:empty) { border-top: 1px dashed var(--trial-border); margin-top: 16px; padding-top: 16px; }
+.combatTrialExtraSkills:empty { display: none; }
+.combatTrialHelp { color: #6a7789; font-size: 12px; line-height: 1.65; margin: 12px 0 0; overflow-wrap: anywhere; }
+.combatTrialResultHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.combatTrialResultHeading h3 { margin-bottom: 0; }
+.combatTrialStatus { color: #4f6481; font-size: 11px; border-radius: 5px; padding: 4px 7px; background: #edf2f8; }
+.combatTrialSummary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; margin: 20px 0; }
+.combatTrialValueCard { border: 1px solid #e3eaf3; border-radius: 10px; padding: 15px; background: #f7f9fc; min-width: 0; }
+.combatTrialValueLabel { color: #61718a; font-size: 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.combatTrialValue { color: #254e85; font-size: 25px; line-height: 1.3; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.combatTrialValueNote { color: #6a7789; font-size: 11px; line-height: 1.6; margin-top: 7px; overflow-wrap: anywhere; }
+.combatTrialNotice { grid-column: 1 / -1; padding: 13px 15px; border: 1px solid #e9d9b1; border-radius: 9px; background: #fffaf0; color: #7c6132; font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.combatTrialDescription { grid-column: 1 / -1; color: #516178; font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.combatTrialWorkspace details { min-width: 0; }
+.combatTrialWorkspace summary, .combatTrialExample > summary { cursor: pointer; color: #435a79; font-size: 13px; font-weight: 650; }
+.combatTrialWorkspace summary > span { float: right; color: #8390a3; font-size: 11px; font-weight: 400; }
+.combatTrialResultDetails { border-top: 1px solid #e9edf3; padding: 13px 0; }
+.combatTrialResultDetails summary { font-weight: 500; }
+.combatTrialWorkspace pre, .combatTrialExample pre { font-family: inherit; font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 0; }
+.combatTrialWorkspace #combatCatalogNumbers { max-height: 560px; overflow: auto; padding: 12px; border-radius: 7px; background: #f7f9fc; color: #455670; }
+.combatTrialAdvanced, .combatTrialStatePanel { border: 1px solid var(--trial-border); padding: 16px; border-radius: 12px; background: #fff; }
+.combatTrialConditionGroup { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e9edf3; }
+.combatTrialConditionGroup > .combatTrialFields { margin-top: 14px; grid-template-columns: 1fr; }
+.combatTrialWorkspace label.combatTrialCheck, .combatTrialWorkspace label:has(input[type="checkbox"]) { grid-column: 1 / -1; flex-direction: row; align-items: flex-start; gap: 9px; line-height: 1.7; }
+.combatTrialWorkspace input[type="checkbox"] { flex-shrink: 0; margin-top: 2px; width: 17px; height: 17px; accent-color: var(--trial-accent); }
+.combatTrialExtras fieldset { min-width: 0; margin: 0 0 14px; padding: 16px; border: 1px solid var(--trial-border); border-radius: 12px; background: #fff; }
+.combatTrialExtras fieldset > label { margin-top: 12px; }
+.combatTrialExtras legend { color: #435a79; font-size: 13px; font-weight: 700; padding: 0 6px; }
+.combatTrialStatePanel { margin-top: 20px; }
+.combatTrialStatePanel .combatTrialStateFields { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-top: 18px; }
+.combatTrialActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.combatTrialWorkspace button { margin: 0; border: 1px solid #cdd7e5; border-radius: 7px; background: #fff; color: #435a79; font-size: 13px; padding: 9px 12px; }
+.combatTrialWorkspace button.combatTrialPrimaryButton { color: #fff; background: #365f9c; border-color: #365f9c; }
+.combatTrialStateResults { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.combatTrialStateResults h4 { color: #516178; font-size: 13px; margin-bottom: 4px; }
+.combatTrialExample { min-width: 0; padding: 16px; border: 1px solid #dce4ef; border-radius: 12px; background: #fff; }
+.combatTrialExample section { margin-top: 16px; }
+.combatTrialExample h2 { font-size: 16px; }
+.combatTrialExample .row { display: flex; flex-wrap: wrap; gap: 12px; }
+.combatTrialExample label { font-size: 13px; }
+@media (max-width: 850px) {
+  .combatTrialLayout { grid-template-columns: 1fr; grid-template-areas: "setup" "results" "extras"; gap: 12px; }
+  .combatTrialCard { padding: 18px; }
+  .combatTrialStateResults { grid-template-columns: 1fr; }
+  .combatTrialHero { align-items: flex-start; padding-top: 12px; }
+  .combatTrialHero h2 { font-size: 22px; }
+  .combatTrialCoverage { font-size: 10px; padding: 6px 8px; }
+  .combatTrialHero p:last-child { max-width: 34em; }
+}
+@media (max-width: 420px) {
+  .combatTrialHero { flex-direction: column; gap: 8px; }
+  .combatTrialWorkspace .combatTrialFields { grid-template-columns: 1fr; }
+  .combatTrialWorkspace summary > span { float: none; display: block; margin: 3px 0 0 18px; }
+  .combatTrialValue { font-size: 23px; }
+}
+
+/* Field/group relevance must win over layout display rules. */
+.combatTrialWorkspace [hidden] { display: none !important; }
+
+/* Searchable catalogue and grouped result cards. */
+.combatTrialChosenName { margin: 0; font-size: 16px; font-weight: 700; color: #254e85; }
+.combatTrialPicker { width: min(780px, calc(100vw - 32px)); max-height: 85vh; border: 1px solid #dce4ef; border-radius: 16px; padding: 24px; color: #223047; box-shadow: 0 20px 70px #172c4650; }
+.combatTrialPicker::backdrop { background: #14243e70; }
+.combatTrialPickerHeader { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 18px; }
+.combatTrialPickerHeader h3 { margin: 0; }
+.combatTrialPickerList { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 10px; max-height: 50vh; overflow-y: auto; margin: 14px 0; }
+.combatTrialWorkspace button.combatTrialPickerItem { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; padding: 14px; }
+.combatTrialPickerItem:hover, .combatTrialPickerItem:focus-visible { background: #edf3fc; border-color: #365f9c; }
+.combatTrialPickerItem strong { font-size: 14px; }.combatTrialPickerItem span { font-size: 11px; color: #6a7789; }
+.combatTrialSummary { display: flex; flex-direction: column; }
+.combatTrialResultGroup h4 { margin: 0 0 10px; font-size: 14px; color: #435a79; }
+.combatTrialResultGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; }
+.combatTrialResultGroup-damage .combatTrialValueCard { background: #fff6f3; border-color: #efddd4; }
+.combatTrialResultGroup-recovery .combatTrialValueCard { background: #f0f8f3; border-color: #d3e8dc; }
+.combatTrialResultGroup-time .combatTrialValueCard { background: #f6f5fb; border-color: #e0dcef; }
+
+.combatTrialPickerFilters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; margin-top: 14px; }
+@media(max-width: 540px) { .combatTrialPickerFilters { grid-template-columns: 1fr 1fr; } .combatTrialPickerFilters button { grid-column: 1 / -1; } }
+
+.combatTrialPickerItem span.combatTrialPickerRequirements { color: #365f9c; font-size: 12px; font-weight: 600; }
+.combatTrialPickerItem span.combatTrialPickerDescription { color: #43536b; font-size: 13px; line-height: 1.65; }
+.combatTrialPickerItem span.combatTrialPickerStatus { font-size: 11px; margin-top: auto; padding-top: 3px; }
+
+.combatTrialPickerItem span.combatTrialPickerVariation { white-space: pre-line; color: #435a79; font-size: 12px; line-height: 1.7; border-top: 1px solid #e3eaf3; padding-top: 7px; width: 100%; }
+
+.combatTrialWorkspace article.combatTrialPickerItem { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; padding: 14px; border: 1px solid #cdd7e5; border-radius: 9px; background: #fff; cursor: pointer; }
+.combatTrialPickerActions { display: flex; flex-wrap: wrap; gap: 7px; width: 100%; padding-top: 8px; }
+.combatTrialPickerActions button:first-child { background: #365f9c; color: #fff; }
+.combatTrialPickerActions button:disabled { opacity: .5; cursor: default; }

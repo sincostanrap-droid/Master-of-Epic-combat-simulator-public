@@ -1,0 +1,2 @@
+// Actual accepted receipt definitions needed by interval1 request counting.
+(function(root){const data={"428":{"id":428,"action_type":4,"counter":370,"interval":1,"effects":[{"kind":22,"value":0.0,"selector":429,"qualifier":0,"other10":0,"flags":48,"other18":0},{"kind":123,"value":100.0,"selector":0,"qualifier":0,"other10":0,"flags":48,"other18":0}]}};if(typeof module!=="undefined"&&module.exports)module.exports=data;else root.MOE_COMBAT_TIMER_RECEIPTS=data;})(globalThis);
