@@ -43,6 +43,7 @@
    basicRelevant=root.MOE_COMBAT_CONDITION_INPUTS.basicForBundle(compiled?.bundle);
    for(const key of Object.keys(basicDefaults)){const label=el(key).closest?.('label');if(label)label.hidden=!basicRelevant.has(key);}
    for(const key of ['Attack','Magic'])if(el('UseCurrent'+key)){el(key).disabled=el('UseCurrent'+key).checked;if(el(key+'CurrentValue')){const m=calculationMetrics().value;el(key+'CurrentValue').textContent='現在ステータス：'+root.MOE_COMBAT_CONDITION_INPUTS.displayNumber(key==='Attack'?m.atk:m.stats.magic);}}
+   if(el('ElementStrengths')){const elements=root.MOE_COMBAT_CONDITION_INPUTS.elementStrengthElements(compiled?.bundle,root.MOE_COMBAT_NUMERICS,{bladeSelected:el('BladeSelected').checked,bladeMode:el('BladeMode').value});el('ElementStrengths').hidden=!elements.length;for(const id of [2,3,4,5,6])el('Element'+id+'Label').hidden=!elements.includes(id);}
    if(el('RegisterCurrent'))el('RegisterCurrent').hidden=!(compiled&&root.MOE_COMBAT_BUFF_CATALOG_BRIDGE?.availability(compiled.bundle.row.key).available);
    el('SkillEvidence').hidden=!basicRelevant.has('Skill');
    if(compiled&&basicRelevant.has('Skill'))el('SkillEvidence').textContent='計算に使うスキル：'+(skillNames[compiled.bundle.row.definition?.primary_raw]||'未確認')+(basicRelevant.has('Magic')?'。魔力も入力してください。':'。');
@@ -404,10 +405,14 @@
    if(!Number.isFinite(value)||value<0)throw Error((key==='Attack'?'攻撃力':'魔力')+'は0以上の数値を指定してください');
    return value;
   }
+  function elementStrengthInputs(){
+   const selected=root.MOE_COMBAT_CONDITION_INPUTS?.elementStrengthElements(compiled?.bundle,root.MOE_COMBAT_NUMERICS,{bladeSelected:el('BladeSelected').checked,bladeMode:el('BladeMode').value})||[];
+   return Object.fromEntries(selected.flatMap(id=>{const text=el('Element'+id)?.value?.trim();if(!text)return [];const value=Number(text);if(!Number.isFinite(value)||value< -100||value>1000)throw Error('属性強化は-100～1000%で指定してください');return [[id,value]];}));
+  }
   function input(mode='effect-only'){
    const bladeSkills=new Set(compiled?root.MOE_COMBAT_NUMERICS.bladeInputs(compiled.bundle,el('BladeMode').value).map(d=>skillNames[d.primary_raw]):[]);
    const skills=Object.fromEntries([...skillInputs].filter(([name])=>!bladeOnlySkills.has(name)||bladeSkills.has(name)).map(([name,node])=>{if(node.value.trim()==='')throw Error(name+'を入力してください');return [name,Number(node.value)];}));
-   return {skill:num('Skill'),magic:sourceStat('Magic'),world:num('World'),skills,caster:el('Caster').value,target:el('Target').value,mode,
+   return {casterElementStrengthByElement:elementStrengthInputs(),skill:num('Skill'),magic:sourceStat('Magic'),world:num('World'),skills,caster:el('Caster').value,target:el('Target').value,mode,
     conditionsConfirmed:el('Conditions').checked,acknowledgePartial:el('Partial').checked,recognitionProfile:el('RecognitionProfile').value||'unknown'};
   }
   // Trial conditions do not change the equipment/Buff configuration. Cache its
@@ -435,7 +440,7 @@
     actionLines.push(...(compiled.bundle.row.numericConditions||[]).map(note=>'計算条件：'+note));
     if(actionScope?.utilityScope?.whole&&!optionalGenerated){
      const value=key=>{const text=el(key).value.trim();return text!==''&&Number.isFinite(+text)?+text:undefined;};
-     const p={skill:value('Skill'),magic:sourceStat('Magic'),world:value('World'),resistance:value('Resistance'),targetDefense:value('Defense'),seed:value('Seed'),targetAmplificationAllowed:el('Amplification').value==='yes',skills:Object.fromEntries([...skillInputs].map(([name,node])=>[name,node.value.trim()===''?undefined:Number(node.value)]))};
+     const p={casterElementStrengthByElement:elementStrengthInputs(),skill:value('Skill'),magic:sourceStat('Magic'),world:value('World'),resistance:value('Resistance'),targetDefense:value('Defense'),seed:value('Seed'),targetAmplificationAllowed:el('Amplification').value==='yes',skills:Object.fromEntries([...skillInputs].map(([name,node])=>[name,node.value.trim()===''?undefined:Number(node.value)]))};
      const knownTimes=root.MOE_COMBAT_CALCULATION_SCOPE.knownUtilityTimes(compiled.bundle,p,skillNames,root.MOE_COMBAT_NUMERICS.duration);
      el('Numbers').textContent=actionLines.join('\n')+'\n'+knownTimes.map(t=>(t.conditional?'参照先（単独成立時）：'+t.name+' / ':'')+'効果時間：'+utilityTime(t)+(t.scope?'\n'+t.scope:'')).join('\n');
      showSummary(null,{...actionScope,knownTimes},actionScope.operations);return;

@@ -246,6 +246,7 @@ tests/combatLogParser.test.cjs
 tests/combatLogTab.test.cjs
 tests/combatTrialSettingsPersistence.test.cjs
 tests/currentBuffRegistrationPersistence.test.cjs
+tests/elementStrengthInputs.test.cjs
 tests/equipmentPostStorage.test.cjs
 tests/finalStorageAudit.test.cjs
 tests/pagesPublicationBuild.test.py

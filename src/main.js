@@ -7121,7 +7121,7 @@ function normalizeCompositeRows(rows) {
     }
     if (r.catalogInputs && typeof r.catalogInputs === "object") {
       out.catalogInputs = Object.fromEntries(Object.entries(r.catalogInputs).filter(([key, value]) =>
-        (typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value)) || key==='skills'&&value&&typeof value==='object' || key==='combatTrialSource'&&value&&typeof value==='object')
+        (typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value)) || ['skills','casterElementStrengthByElement'].includes(key)&&value&&typeof value==='object' || key==='combatTrialSource'&&value&&typeof value==='object')
       ));
     }
     extraFieldDefsFor("buff").forEach(d => {

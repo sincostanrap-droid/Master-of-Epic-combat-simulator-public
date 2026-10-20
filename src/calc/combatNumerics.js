@@ -48,7 +48,20 @@
   85:'資源selector別の消費補正の適用式',235:'効果技能selectorの名前の照合'
  };
  function number(value,label,min=-100000,max=100000){if(value==null||value===''||!Number.isFinite(+value)||+value<min||+value>max)throw Error(label+'を有効な数値で指定してください');return +value;}
+ // Per-element manual values replace automatic totals; absent keys retain the current build.
+ function elementStrength(d,p,automatic=0){
+  const values=p.casterElementStrengthByElement;
+  return values&&Object.hasOwn(values,d.element)?number(values[d.element],'属性強化',-100,1000):automatic;
+ }
+ function attackElementContext(entry,c,p){
+  const apply=(hit,context)=>({...context,elementPct:elementStrength(hit.definition,p,context.elementPct||0),
+   additionalElementPct:hit.additional?elementStrength(hit.additional,p,context.additionalElementPct||0):context.additionalElementPct});
+  const result=apply(entry,c);
+  if(entry.hits?.length)result.hitContexts=entry.hits.map((hit,i)=>apply(hit,c.hitContexts?.[i]||c));
+  return result;
+ }
  function controls(input){
+  if(input.casterElementStrengthByElement)for(const [key,value]of Object.entries(input.casterElementStrengthByElement)){if(![2,3,4,5,6].includes(Number(key)))throw Error('属性強化の属性が不明です');number(value,'属性強化',-100,1000);}
   const skill=number(input.skill,'主技能',0,inputs.skillMax),mp=number(input.magic,'魔力',0,1000),world=number(input.world,'世界条件',0,1),seed=number(input.seed,'変動種値',0,0xffffffff);
   if(!Number.isInteger(seed)||!Number.isInteger(world))throw Error('世界条件と変動種値は整数です');
   if(typeof input.targetAmplificationAllowed!=='boolean')throw Error('技能・魔力補正の対象条件を指定してください');
@@ -90,7 +103,7 @@
   return null;
  }
  function channels(d,row,p,names){
-  p={...p,casterElementStrengthPct:p.casterElementStrengthPct+(p.equipmentElementFractions?.[d.element]||0)*100};
+  p={...p,casterElementStrengthPct:elementStrength(d,p,p.casterElementStrengthPct+(p.equipmentElementFractions?.[d.element]||0)*100)};
   const receipt=passiveReceipts.rules[d.id];
   if(p.passiveLearnedConfirmed===true&&d.action_type===5&&receipt&&receipt.flags===d.flags&&JSON.stringify(receipt.effectSignature)===JSON.stringify(d.effects.map(e=>[e.kind,e.selector,e.value,e.flags])))return {x:null,m:1,a:0,receipt:'習得済みパッシブの通常登録（倍率1・加算0）',evidence:passiveReceipts.evidence};
   if(fixedReceipt(d,row,p)||p.weatherChildDefinitionId===d.id&&weatherChildren.children[d.id])return {x:null,m:1,a:0};
@@ -1207,7 +1220,7 @@
      rangedWeapon:!!ranged,...(ranged?{distance:number(input.shotDistance,'射撃対象までの距離（内部値）',0)}:{}),
      weaponAttack:number(c.attack,'使用者攻撃力',0),weaponHit:number(c.hit,'使用者命中',0),
      stats:{4:number(c.defense,'使用者防御力',0),6:p.magic},statCache:c.statCache,buffRecords:c.skillBuffs||[],
-     casterPhysicalPowerFraction:number(c.powerMultiplier,'物理威力倍率',0)-1,casterElementStrengthFraction:(c.elementPct||0)/100,
+     casterPhysicalPowerFraction:number(c.powerMultiplier,'物理威力倍率',0)-1,casterElementStrengthFraction:elementStrength(d,p,c.elementPct||0)/100,
      resource218:100,resource228:number(c.hpPercent??100,'使用者HP割合',0,100),random15:number(p.random15,'威力変動15bit整数',0,32767),
      targetPredicateSelectors:p.physicalCategoryMatched?saved.effects.filter(e=>e.kind===239).map(e=>e.selector):[]});
     p.constructed[d.id]={x:power.encodedPower,y:saved.uses_alternate_hit?null:power.encodedHit/16,hitUnknown:!!saved.uses_alternate_hit};
@@ -1273,7 +1286,7 @@
     for(const k of ['attack','hit','defense','evasion','powerMultiplier','specialMultiplier','incoming','targetMultiplier','finalCap'])number(c[k],k,0);
     let entry=bundle.attack;
     if(dualWeaponRoute){const ids=new Set(dualWeaponRoute.definitionIds);entry={...entry,hits:(entry.hits||[entry]).filter(h=>ids.has(h.definition.id)),damageIssues:(entry.damageIssues||[]).filter(v=>v!=='weapon-routing')};c.hitContexts=entry.hits.map(h=>({...dualWeaponRoute.contexts[h.definition.id],skill:p.skill,magic:p.magic,targetDefense:p.targetDefense,resistance:p.resistance,combatActionInput:undefined}));c.hitCount=entry.hits.length;}
-    attack=damage.calculate(entry,c);
+    attack=damage.calculate(entry,attackElementContext(entry,c,p));
    }catch(e){attackReason=e.message;}}
   }
   // Saved attack adapters own their verified constituent effects; auxiliary
@@ -1354,7 +1367,7 @@
     const reflected=number(input.guardReplayResistance,'反射先（元の魔法使用者）の属性耐性',0),defense=number(input.guardReplayDefense,'反射先（元の魔法使用者）の防御力',0);
     const replay=evaluate({row:{key:'magic-replay:'+d.id,name:d.name,internalId:d.id,matchStatus:'一致',definition:d,dependencies:[]},numericReferences:{}},
      {skill:q.skill,magic:q.magic,world:p.world,seed:q.seed,random15:p.random15,resistance:reflected,targetDefense:defense,targetAmplificationAllowed:true,
-      casterElementStrengthPct:0,replayedMagicInput:{id:d.id,x:q.x,y:q.y},timePeriod:p.timePeriod,
+      casterElementStrengthPct:0,casterElementStrengthByElement:{},replayedMagicInput:{id:d.id,x:q.x,y:q.y},timePeriod:p.timePeriod,
       interruptCondition:p.interruptCondition,interruptNpcProfile:p.interruptNpcProfile,interruptNpcLevel:p.interruptNpcLevel,interruptNpcRandom15:p.interruptNpcRandom15,
       singlePositiveUpdateConfirmed:p.singlePositiveUpdateConfirmed,fixedUpdateElapsed:p.fixedUpdateElapsed},skillNames);
     r.magicReplay={supported:true,emitted:true,id:d.id,name:d.name,x:q.x,y:q.y,seed:q.seed,effects:replay.effects,times:replay.times,pending:replay.pending,scope:q.scope,evidence:q.evidence};
@@ -1436,6 +1449,6 @@
   return new Set([...definitions,...children].flatMap(d=>d.effects.map(e=>e.kind)));
  }
  function areaBuffOptions(bundle){const received=receivedDefinitionRule(bundle.row);if(received)return received.choices.map(c=>({id:c.id,name:c.name+'（受理済みの段階）'}));const h=headerAction(bundle.row);if(h)return h.children.map(id=>({id,name:generatedActions.children[id].name}));const c=wikiHints.data.areaCandidates?.[bundle.row.internalId];if(c?.choice)return c.children.map(d=>({id:d.id,name:d.name}));const b=bundle.row.definition?.effects.map(e=>generatedActions.bindings[bundle.row.internalId+':'+e.index]).find(b=>b?.choice);return b?b.children.map(id=>({id,name:(b.candidateOnly?'候補・親未照合 ID'+id+' / ':'')+generatedActions.children[id].name})):[];}
- const api=Object.freeze({evaluate,channels,independentInput,duration,conditionalInputKinds,areaBuffOptions,proof,generatedInputChildren:bundle=>{const h=headerAction(bundle.row);return h?h.children.map(id=>generatedActions.children[id]):generatedInput.children(bundle);},generatedInputNeedsSkill:generatedInput.needsSkill,targetReductionEligibility:targetReduction.eligibility,targetPhysicalReductions:targetReduction.definitions,targetMagicReductions:targetReduction.magicDefinitions,wikiNotes:wikiHints.data.notes,bladeInputs:blades.inputs,guardIncomingActions:extensions.guardInputs.incoming,guardMagicInputs:extensions.magicGuardInputs,guardShields:extensions.shieldDefs.shields,magicRanges:casting.ranges,craftingSelectors:crafting.selectors,craftingSpeedSelectors:crafting.speedSelectors,npcInterruptionProfiles:common?require('../data/generated/combatNpcInterruptionProfiles.generated.js').profiles:root.MOE_COMBAT_NPC_INTERRUPTION_PROFILES?.profiles,replacementOptions:common?require('../data/generated/combatReplacementRules.generated.js').definitions:root.MOE_COMBAT_REPLACEMENT_RULES?.definitions});
+ const api=Object.freeze({evaluate,elementStrength,channels,independentInput,duration,conditionalInputKinds,areaBuffOptions,proof,generatedInputChildren:bundle=>{const h=headerAction(bundle.row);return h?h.children.map(id=>generatedActions.children[id]):generatedInput.children(bundle);},generatedInputNeedsSkill:generatedInput.needsSkill,targetReductionEligibility:targetReduction.eligibility,targetPhysicalReductions:targetReduction.definitions,targetMagicReductions:targetReduction.magicDefinitions,wikiNotes:wikiHints.data.notes,bladeInputs:blades.inputs,guardIncomingActions:extensions.guardInputs.incoming,guardMagicInputs:extensions.magicGuardInputs,guardShields:extensions.shieldDefs.shields,magicRanges:casting.ranges,craftingSelectors:crafting.selectors,craftingSpeedSelectors:crafting.speedSelectors,npcInterruptionProfiles:common?require('../data/generated/combatNpcInterruptionProfiles.generated.js').profiles:root.MOE_COMBAT_NPC_INTERRUPTION_PROFILES?.profiles,replacementOptions:common?require('../data/generated/combatReplacementRules.generated.js').definitions:root.MOE_COMBAT_REPLACEMENT_RULES?.definitions});
  if(common)module.exports=api;else root.MOE_COMBAT_NUMERICS=api;
 })(globalThis);

@@ -91,7 +91,7 @@
   const {bundle,math}=compiled,d=bundle.row.definition;
   const skill=life.number(input.skill,'主技能',0,inputFormula.skillMax),magic=life.number(input.magic,'魔力',0,1000);
   if(![0,1].includes(input.world))throw Error('世界条件0/1を指定してください');
-  const controls={skill,magic,world:input.world,casterElementStrengthPct:life.number(input.casterElementStrengthPct??0,'属性強化',-100,1000)};
+  const controls={skill,magic,world:input.world,casterElementStrengthPct:life.number(input.casterElementStrengthByElement&&Object.hasOwn(input.casterElementStrengthByElement,d.element)?input.casterElementStrengthByElement[d.element]:input.casterElementStrengthPct??0,'属性強化',-100,1000)};
   const rows=[],displayOnlyRows=[];
   for(const status of compiled.effects.filter(e=>e.quantity&&!e.application&&e.definitionId===compiled.id&&e.handler==='能力状態')){
    const e=d.effects.find(e=>e.index===status.index),r=math.effect(d,e,controls);

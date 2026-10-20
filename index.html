@@ -292,6 +292,13 @@ MoE固有の主な仮定:
 <label>世界条件<select id="combatCatalogWorld"><option value="0">通常</option><option value="1">War Age</option></select></label>
 <label>対象防御力<input id="combatCatalogDefense" type="number" min="0" value="100" step="any"></label>
 <label>対象の該当属性耐性<input id="combatCatalogResistance" type="number" min="0" value="50" step="any"></label></div>
+      <div id="combatCatalogElementStrengths" hidden><div class="combatTrialFields">
+<label id="combatCatalogElement2Label">無属性強化（%）<input id="combatCatalogElement2" type="number" min="-100" max="1000" step="any" placeholder="未入力なら現在の構成"></label>
+<label id="combatCatalogElement3Label">火属性強化（%）<input id="combatCatalogElement3" type="number" min="-100" max="1000" step="any" placeholder="未入力なら現在の構成"></label>
+<label id="combatCatalogElement4Label">水属性強化（%）<input id="combatCatalogElement4" type="number" min="-100" max="1000" step="any" placeholder="未入力なら現在の構成"></label>
+<label id="combatCatalogElement5Label">風属性強化（%）<input id="combatCatalogElement5" type="number" min="-100" max="1000" step="any" placeholder="未入力なら現在の構成"></label>
+<label id="combatCatalogElement6Label">地属性強化（%）<input id="combatCatalogElement6" type="number" min="-100" max="1000" step="any" placeholder="未入力なら現在の構成"></label>
+      </div><p class="combatTrialHelp">未入力の属性は現在の構成から計算します。手入力した属性はその値で置き換え、二重加算しません。0は強化なしです。</p></div>
       <div id="combatCatalogSkills" class="combatTrialFields combatTrialExtraSkills"></div>
       <div id="combatCatalogReleaseConditions" hidden>
         <div class="combatTrialFields"><label>計算対象<select id="combatCatalogReleaseTargetType"><option value="npc">NPC</option><option value="pc">PC</option><option value="corpse">死体</option><option value="">未指定</option></select></label>
@@ -1723,7 +1730,7 @@ MoE固有の主な仮定:
 <script src="./src/ui/settingsCompact.js?v=20260928" defer></script>
 <script src="./src/data/generated/catalogEffectNames.generated.js?v=20261017-quantity-only-warnings" defer></script>
 <script src="./src/ui/effectDisplayText.js?v=20261017-quantity-only-warnings" defer></script>
-<script src="./src/main.js?v=20261018-release-ux" defer></script>
+<script src="./src/main.js?v=20261021-element-strength" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>
@@ -1737,7 +1744,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/combatNpcArmorNumerics.js?v=20261016-gaps29" defer></script>
 <script src="./src/data/generated/combatPassiveReceipts.generated.js?v=20261016-gaps27" defer></script>
 <script src="./src/data/generated/combatPresentationScope.generated.js?v=20261015-gaps16" defer></script>
-<script src="./src/calc/combatCatalogEngine.js?v=20261015-jasper" defer></script>
+<script src="./src/calc/combatCatalogEngine.js?v=20261021-element-strength" defer></script>
 <script src="./src/data/generated/combatNumericReference.generated.js?v=20261011-gaps5" defer></script>
 <script src="./src/data/generated/combatGuardReference.generated.js?v=20261011-gaps6" defer></script>
 <script src="./src/data/generated/combatGuardInputs.generated.js?v=20261015-gaps20" defer></script>
@@ -1782,13 +1789,13 @@ MoE固有の主な仮定:
 <script src="./src/calc/combatGeneratedInputNumerics.js?v=20261017-gaps51-trap-level-input" defer></script>
 <script src="./src/data/generated/combatGuardReplay.generated.js?v=20261016-gaps33-complete" defer></script>
 <script src="./src/calc/combatGuardReplayNumerics.js?v=20261016-gaps33-complete" defer></script>
-<script src="./src/calc/combatNumerics.js?v=20261017-gaps51-trap-level-input" defer></script>
+<script src="./src/calc/combatNumerics.js?v=20261021-element-strength" defer></script>
 <script src="./src/data/manual/utilityDescriptionScope.manual.js?v=20261016" defer></script>
 <script src="./src/calc/combatCalculationScope.js?v=20261017-gaps51-trap-level-input" defer></script>
 <script src="./src/data/generated/combatCatalogFilters.generated.js?v=20261017-skill-filter-mode" defer></script>
-<script src="./src/ui/combatConditionInputs.js?v=20261020-stat-sources-2" defer></script>
+<script src="./src/ui/combatConditionInputs.js?v=20261021-element-strength" defer></script>
 <script src="./src/calc/buffNumericRegistration.js?v=20261017-numeric-registration" defer></script>
-<script src="./src/ui/combatCatalogTrial.js?v=20261020-stat-sources" defer></script>
+<script src="./src/ui/combatCatalogTrial.js?v=20261021-element-strength" defer></script>
 <script src="./src/ui/buildAnalysis.js?v=20261018-final-display" defer></script>
 <script src="./src/ui/showcaseSkillPlusTotals.js?v=20261018-display-precision" defer></script>
 <script src="./src/ui/showcaseElementDamageTotals.js?v=20261018-display-precision" defer></script>

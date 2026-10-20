@@ -86,6 +86,13 @@
   if(effects.some(e=>e.kind===86&&e.flags===50))add('ReverseReferenceNormalPc','ReverseReferenceNpcUnarmed','ReverseReferenceNpcWeapon','ReverseReferenceNpcShield','ReverseReferenceNpcShieldSkill','ReverseReferenceSkill','ReverseReferenceAttack','ReverseReferenceHit','ReverseReferenceDamage','ReverseReferenceDefense','ReverseReferenceGearDefense','ReverseReferenceWearSkill','ReverseReferenceCritical');
   return allowed;
  }
+ function elementStrengthElements(bundle,numeric,selection={}){
+  if(!bundle)return [];
+  const defs=[bundle.row.definition,...bundle.row.dependencies||[],...(selection.bladeSelected?numeric.bladeInputs(bundle,selection.bladeMode||'normal'):[])].filter(Boolean);
+  // Strength-scaled numeric handlers; summon/lifetime/motion-only definitions do not use this input.
+  const strengthKinds=new Set([2,3,11,12,19,38,41,42,47,54,64,82,83,108,109,132,147,170,171,173,205,237,247,274,275]);
+  return [...new Set(defs.filter(d=>[2,3,4,5,6].includes(d.element)&&!(d.flags&0x1000)&&(d.action_type===2||(d.effects||[]).some(e=>strengthKinds.has(e.kind)))).map(d=>d.element))].sort();
+ }
  function basicForBundle(bundle){
   const result=new Set();if(!bundle)return result;
   const defs=[bundle.row.definition,...bundle.row.dependencies||[]].filter(Boolean);
@@ -122,5 +129,5 @@
   const left=requiredValue(a,skill),right=requiredValue(b,skill);
   if(left===null)return right===null?0:1;if(right===null)return -1;return left-right;
  }
- const api={forBundle,basicForBundle,displayNumber,displayText,requiredValue,compareRequired};if(typeof module==='object'&&module.exports)module.exports=api;else root.MOE_COMBAT_CONDITION_INPUTS=api;
+ const api={forBundle,basicForBundle,elementStrengthElements,displayNumber,displayText,requiredValue,compareRequired};if(typeof module==='object'&&module.exports)module.exports=api;else root.MOE_COMBAT_CONDITION_INPUTS=api;
 })(globalThis);

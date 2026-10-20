@@ -17,8 +17,8 @@ let checks=0;const has=(regex)=>{assert.match(el('Numbers').textContent,regex);c
 async function search(text){el('Search').value=text;await el('Search').handlers.input();const choice=el('Select').children.find(r=>r.value);if(choice){el('Select').value=choice.value;await el('Select').handlers.change();}}
 let ui;
 async function start(){
- for(const k of ['Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping']){el(k).id='combatCatalog'+k;el(k).type=['UseCurrentAttack','UseCurrentMagic','Conditions','PeriodicReference','BladeSelected','SummonBaseVariant','GeneratedUnmodified','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].includes(k)?'checkbox':'number';}
- el('Trial').querySelectorAll=()=>['Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].map(el);
+ for(const k of ['Element2','Element3','Element4','Element5','Element6','Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping']){el(k).id='combatCatalog'+k;el(k).type=['UseCurrentAttack','UseCurrentMagic','Conditions','PeriodicReference','BladeSelected','SummonBaseVariant','GeneratedUnmodified','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].includes(k)?'checkbox':'number';}
+ el('Trial').querySelectorAll=()=>['Element2','Element3','Element4','Element5','Element6','Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].map(el);
  vm.runInNewContext(fs.readFileSync(path.join(root,'src/ui/combatCatalogTrial.js'),'utf8'),ui={
   MOE_COMBAT_RESOURCE_FORMULA:require('../src/calc/combatResourceFormula'),structuredClone,AbortController,setTimeout:fn=>{fn();return null;},clearTimeout:()=>{},MOE_COMBAT_CATALOG_ENGINE:api,MOE_COMBAT_CATALOG_INDEX:index,MOE_COMBAT_NUMERICS:numeric,
   document:{readyState:'complete',getElementById:id=>nodes[id.replace('combatCatalog','')],createElement:element,addEventListener:(k,fn)=>events[k]=fn},
@@ -29,6 +29,15 @@ async function start(){
 
   for(const f of ['src/storage/importExport.js','src/storage/shareUrl.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),page);
  const bridge=ui.MOE_COMBAT_TRIAL_SETTINGS;
+ await search('バースト');
+ ui.MOE_COMBAT_CONDITION_INPUTS=require('../src/ui/combatConditionInputs');
+ el('Element3').value='20';el('Trial').handlers.input({target:el('Element3')});
+ const elementalSaved=json(bridge.capture()),elementalNumbers=el('Numbers').textContent;
+ await bridge.restore(elementalSaved);assert.equal(el('Element3').value,'20');assert.equal(el('Numbers').textContent,elementalNumbers);
+ el('Element3').value='0';const elementalZero=json(bridge.capture());await bridge.restore(elementalZero);assert.equal(el('Element3').value,'0');
+ el('Element3').value='';const elementalBlank=json(bridge.capture());await bridge.restore(elementalBlank);assert.equal(el('Element3').value,'');
+ await bridge.restore(null);
+
  // Manual/current stat sources: actual UI calculation, including valid zero and blank rejection.
  const rerender=()=>el('Trial').handlers.input({target:el('Skill')});
  await search('ヒーリング');el('UseCurrentMagic').checked=false;el('Magic').value='100';rerender();const manualHeal=el('Numbers').textContent;
