@@ -94,7 +94,7 @@
   if(defs.some(d=>d.action_type===2||d.effects.some(e=>e.kind===260)||[2,3].includes(d.effect_class)&&d.element===1))result.add('Defense');
   // Both harmful strength and harmful duration can consume resistance.
   if(defs.some(d=>[2,3].includes(d.effect_class)&&d.element!==1))result.add('Resistance');
-  if(bundle.attack||defs.some(d=>d.action_type===2||d.effects.some(e=>e.kind===260)))result.add('Attack');
+  if(defs.some(d=>d.action_type===2||d.effects.some(e=>e.kind===260)))result.add('Attack');
   if(bundle.attack||defs.some(d=>d.extra_coefficient||d.extra_upper_limit||d.effects.some(e=>e.flags&0x300)))result.add('World');
   return result;
  }
