@@ -2,7 +2,7 @@
  function mount(){
   const index=root.MOE_COMBAT_CATALOG_INDEX,api=root.MOE_COMBAT_CATALOG_ENGINE;if(!index||!api||!document.getElementById('combatCatalogTrial'))return;
   let basicRelevant=null;
-  const basicDefaults={Skill:100,Magic:100,World:0,Defense:100,Resistance:50};
+  const basicDefaults={Skill:100,Magic:100,Attack:100,World:0,Defense:100,Resistance:50};
   const el=key=>document.getElementById('combatCatalog'+key),num=key=>{if(basicRelevant&&Object.hasOwn(basicDefaults,key)&&!basicRelevant.has(key))return basicDefaults[key];const text=el(key).value.trim();if(!text)throw Error('数値を入力してください');const n=Number(text);if(!Number.isFinite(n))throw Error('有限の数値を入力してください');return n;};
   let latestNumericInputs=null;
   let state=api.create(),compiled=null,version=0,loading=null,skillNames={},renderTimer=null;
@@ -42,6 +42,7 @@
    if(!root.MOE_COMBAT_CONDITION_INPUTS)return;
    basicRelevant=root.MOE_COMBAT_CONDITION_INPUTS.basicForBundle(compiled?.bundle);
    for(const key of Object.keys(basicDefaults)){const label=el(key).closest?.('label');if(label)label.hidden=!basicRelevant.has(key);}
+   for(const key of ['Attack','Magic'])if(el('UseCurrent'+key)){el(key).disabled=el('UseCurrent'+key).checked;if(el(key+'CurrentValue')){const m=calculationMetrics().value;el(key+'CurrentValue').textContent='現在ステータス：'+root.MOE_COMBAT_CONDITION_INPUTS.displayNumber(key==='Attack'?m.atk:m.stats.magic);}}
    if(el('RegisterCurrent'))el('RegisterCurrent').hidden=!(compiled&&root.MOE_COMBAT_BUFF_CATALOG_BRIDGE?.availability(compiled.bundle.row.key).available);
    el('SkillEvidence').hidden=!basicRelevant.has('Skill');
    if(compiled&&basicRelevant.has('Skill'))el('SkillEvidence').textContent='計算に使うスキル：'+(skillNames[compiled.bundle.row.definition?.primary_raw]||'未確認')+(basicRelevant.has('Magic')?'。魔力も入力してください。':'。');
@@ -397,10 +398,16 @@
     el('Message').textContent='効果・対象条件を確認してください';render();
    }catch(e){if(token===version){el('Message').textContent=e.message+'。自動再試行は行いません';el('Numbers').textContent='対象データを読み込めませんでした';showSummary(null,null,[],e.message,'読込み失敗');}}
   }
+  function sourceStat(key){
+   if(basicRelevant&&!basicRelevant.has(key))return basicDefaults[key];
+   const value=el('UseCurrent'+key)?.checked?(()=>{const m=calculationMetrics().value;return key==='Attack'?m.atk:m.stats.magic;})():num(key);
+   if(!Number.isFinite(value)||value<0)throw Error((key==='Attack'?'攻撃力':'魔力')+'は0以上の数値を指定してください');
+   return value;
+  }
   function input(mode='effect-only'){
    const bladeSkills=new Set(compiled?root.MOE_COMBAT_NUMERICS.bladeInputs(compiled.bundle,el('BladeMode').value).map(d=>skillNames[d.primary_raw]):[]);
    const skills=Object.fromEntries([...skillInputs].filter(([name])=>!bladeOnlySkills.has(name)||bladeSkills.has(name)).map(([name,node])=>{if(node.value.trim()==='')throw Error(name+'を入力してください');return [name,Number(node.value)];}));
-   return {skill:num('Skill'),magic:num('Magic'),world:num('World'),skills,caster:el('Caster').value,target:el('Target').value,mode,
+   return {skill:num('Skill'),magic:sourceStat('Magic'),world:num('World'),skills,caster:el('Caster').value,target:el('Target').value,mode,
     conditionsConfirmed:el('Conditions').checked,acknowledgePartial:el('Partial').checked,recognitionProfile:el('RecognitionProfile').value||'unknown'};
   }
   // Trial conditions do not change the equipment/Buff configuration. Cache its
@@ -428,7 +435,7 @@
     actionLines.push(...(compiled.bundle.row.numericConditions||[]).map(note=>'計算条件：'+note));
     if(actionScope?.utilityScope?.whole&&!optionalGenerated){
      const value=key=>{const text=el(key).value.trim();return text!==''&&Number.isFinite(+text)?+text:undefined;};
-     const p={skill:value('Skill'),magic:value('Magic'),world:value('World'),resistance:value('Resistance'),targetDefense:value('Defense'),seed:value('Seed'),targetAmplificationAllowed:el('Amplification').value==='yes',skills:Object.fromEntries([...skillInputs].map(([name,node])=>[name,node.value.trim()===''?undefined:Number(node.value)]))};
+     const p={skill:value('Skill'),magic:sourceStat('Magic'),world:value('World'),resistance:value('Resistance'),targetDefense:value('Defense'),seed:value('Seed'),targetAmplificationAllowed:el('Amplification').value==='yes',skills:Object.fromEntries([...skillInputs].map(([name,node])=>[name,node.value.trim()===''?undefined:Number(node.value)]))};
      const knownTimes=root.MOE_COMBAT_CALCULATION_SCOPE.knownUtilityTimes(compiled.bundle,p,skillNames,root.MOE_COMBAT_NUMERICS.duration);
      el('Numbers').textContent=actionLines.join('\n')+'\n'+knownTimes.map(t=>(t.conditional?'参照先（単独成立時）：'+t.name+' / ':'')+'効果時間：'+utilityTime(t)+(t.scope?'\n'+t.scope:'')).join('\n');
      showSummary(null,{...actionScope,knownTimes},actionScope.operations);return;
@@ -535,6 +542,7 @@
     p.drunk=cfg.inputs.drunk;p.damageContext=m.techniqueContext||{attack:m.atk,hit:m.playerHit,defense:m.defense,powerMultiplier:m.dmgMultiplier,incoming:m.basePostMultiplier,targetMultiplier:m.npcDamageTakenMultiplier,
      hpPercent:cfg.inputs.techniqueHpPercent??100,statCache:{91:0,89:m.extraStats.extraKickHit,90:m.extraStats.extraFangHit,94:m.extraStats.extraKickAttack,95:m.extraStats.extraFangAttack}};p.attack=m.atk;
    }catch(e){attackContextError=e.message;}
+   if(basicRelevant?.has('Attack')??true){p.attack=sourceStat('Attack');if(p.damageContext)p.damageContext={...p.damageContext,attack:p.attack};}
    if(compiled.bundle.row.independentPhysicalChildren?.includes(13576)&&el('IndependentShotSelected').checked)p.physicalChildContexts={13576:{...p.damageContext,attack:condition('LeftShotAttack'),hit:condition('LeftShotHit')}};
    p.dualWeaponConfirmed=el('DualWeaponConfirmed').checked;p.dualWeaponLeft=el('DualWeaponLeft').value;p.dualWeaponLeftAttack=condition('DualWeaponLeftAttack');p.dualWeaponLeftHit=condition('DualWeaponLeftHit');
    latestNumericInputs=p;
@@ -790,7 +798,7 @@
    for(const r of scoped?.deferredState||[]){const q=scoped?.conditionalNumerics?.find(q=>q.id===r.id);lines.push((q?.mode==='user-reference-only'?'未解明の仕様（今回の完成条件外）：':'状態再現の残件（数量不足とは別）：')+(r.name||'効果')+' / '+(q?.remaining||r.reason||r.remaining));}
    el('Numbers').textContent=lines.join('\n');
   }catch(e){el('Numbers').textContent='数値計算：'+e.message;showSummary(null,null,[],e.message);}}
-  function render(includeState=false){if(!compiled)return;filterAdditionalInputs();renderNumbers();filterAdditionalInputs();if(includeState||el('StatePanel').open)renderState();for(const key of ['Info','Preview','State','Message'])el(key).textContent=display(playerText(el(key).textContent));}
+  function render(includeState=false){if(!compiled)return;filterAdditionalInputs();renderNumbers();filterAdditionalInputs();if(includeState||el('StatePanel').open)renderState();for(const key of ['Info','Preview','State','Message'])el(key).textContent=display(playerText(el(key).textContent));if(!pendingSettings&&root.localStorage&&root.MOE_COMBAT_TRIAL_SETTINGS)root.localStorage.setItem('moeDamageSimShortShareUrlShowcase',JSON.stringify(collectConfig()));}
   function renderState(){if(!compiled)return;try{
    if(root.MOE_COMBAT_CALCULATION_SCOPE?.describe(compiled.bundle).descriptionOnly){el('Preview').textContent='説明対応。召喚対象・動作内容を確認できます。状態への適用試行は、この作用の完成条件に含めません。';return;}
    const p=input(),ctx=metrics();

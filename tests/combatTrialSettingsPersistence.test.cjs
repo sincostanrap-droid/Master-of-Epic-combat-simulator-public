@@ -11,14 +11,14 @@ function element(tag='div'){return {tag,value:'',checked:false,textContent:'',ch
 const el=k=>nodes[k]??=element(k==='Select'?'select':'div');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const m of html.matchAll(/id="combatCatalog([^"]+)"/g))el(m[1]);
 for(const [k,v]of Object.entries({Skill:100,Magic:100,World:0,Defense:100,Resistance:50,Seed:10,Random15:16384,ItemClass:983041,Amplification:'yes',TimePeriod:'day',Caster:'A',Target:'A',ST:100,MP:100,Material:30,Seconds:60,MaxHP:500,MaxMP:200,ReuseType:1,Concentration:0,ReuseMagicPercent:100,ReuseWeaponPercent:100}))el(k).value=String(v);
-el('PercentHpGate').checked=true;
+el('PercentHpGate').checked=true;el('UseCurrentAttack').checked=true;el('Attack').value='100';
 el('PetLevel').value='50';el('CastingMovementFactor').value='1';
 let checks=0;const has=(regex)=>{assert.match(el('Numbers').textContent,regex);checks++;};
 async function search(text){el('Search').value=text;await el('Search').handlers.input();const choice=el('Select').children.find(r=>r.value);if(choice){el('Select').value=choice.value;await el('Select').handlers.change();}}
 let ui;
 async function start(){
- for(const k of ['Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping']){el(k).id='combatCatalog'+k;el(k).type=['Conditions','PeriodicReference','BladeSelected','SummonBaseVariant','GeneratedUnmodified','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].includes(k)?'checkbox':'number';}
- el('Trial').querySelectorAll=()=>['Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].map(el);
+ for(const k of ['Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping']){el(k).id='combatCatalog'+k;el(k).type=['UseCurrentAttack','UseCurrentMagic','Conditions','PeriodicReference','BladeSelected','SummonBaseVariant','GeneratedUnmodified','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].includes(k)?'checkbox':'number';}
+ el('Trial').querySelectorAll=()=>['Attack','UseCurrentAttack','UseCurrentMagic','Skill','Magic','Select','TimePeriod','Conditions','PeriodicReference','BladeSelected','BladeMode','SummonBaseVariant','GeneratedUnmodified','GeneratedMagic','GeneratedAttack','GeneratedHit','GeneratedNormalNpc','GeneratedRequestsNonOverlapping'].map(el);
  vm.runInNewContext(fs.readFileSync(path.join(root,'src/ui/combatCatalogTrial.js'),'utf8'),ui={
   MOE_COMBAT_RESOURCE_FORMULA:require('../src/calc/combatResourceFormula'),structuredClone,AbortController,setTimeout:fn=>{fn();return null;},clearTimeout:()=>{},MOE_COMBAT_CATALOG_ENGINE:api,MOE_COMBAT_CATALOG_INDEX:index,MOE_COMBAT_NUMERICS:numeric,
   document:{readyState:'complete',getElementById:id=>nodes[id.replace('combatCatalog','')],createElement:element,addEventListener:(k,fn)=>events[k]=fn},
@@ -29,8 +29,25 @@ async function start(){
 
   for(const f of ['src/storage/importExport.js','src/storage/shareUrl.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),page);
  const bridge=ui.MOE_COMBAT_TRIAL_SETTINGS;
+ // Manual/current stat sources: actual UI calculation, including valid zero and blank rejection.
+ const rerender=()=>el('Trial').handlers.input({target:el('Skill')});
+ await search('ヒーリング');el('UseCurrentMagic').checked=false;el('Magic').value='100';rerender();const manualHeal=el('Numbers').textContent;
+ el('Magic').value='150';rerender();assert.notEqual(el('Numbers').textContent,manualHeal);
+ const currentMagic=page.computeMetrics(state,inputs).stats.magic;
+ el('Magic').value=String(currentMagic);rerender();const expectedCurrentHeal=el('Numbers').textContent;
+ el('Magic').value='999';el('UseCurrentMagic').checked=true;rerender();assert.equal(el('Numbers').textContent,expectedCurrentHeal);
+ let sourceSaved=json(bridge.capture());await bridge.restore(sourceSaved);assert.equal(el('UseCurrentMagic').checked,true);assert.equal(el('Magic').value,'999');assert.equal(el('Numbers').textContent,expectedCurrentHeal);
+ el('UseCurrentMagic').checked=false;el('Magic').value='0';rerender();assert.doesNotMatch(el('Numbers').textContent,/数値を入力/);
+ el('Magic').value='';rerender();assert.match(el('Numbers').textContent,/数値を入力/);
+ el('Magic').value='100';await search('チャージド スラッシュ');el('UseCurrentAttack').checked=false;el('Attack').value='100';rerender();const attack100=el('Numbers').textContent;
+ el('Attack').value='200';rerender();assert.notEqual(el('Numbers').textContent,attack100);
+ el('Attack').value=String(page.computeMetrics(state,inputs).atk);rerender();const expectedCurrentAttack=el('Numbers').textContent;
+ el('Attack').value='999';el('UseCurrentAttack').checked=true;rerender();assert.equal(el('Numbers').textContent,expectedCurrentAttack);
+ el('UseCurrentAttack').checked=false;el('Attack').value='0';rerender();sourceSaved=json(bridge.capture());await bridge.restore(sourceSaved);assert.equal(el('UseCurrentAttack').checked,false);assert.equal(el('Attack').value,'0');
+ await bridge.restore(null);assert.equal(el('UseCurrentAttack').checked,true);assert.equal(el('UseCurrentMagic').checked,false);
+
  for(const name of ['マイナー ヒーリング','ムーン フォース','リコール インセクト','フレイムスロワー','ポイズン ブレイド','リモート ボム','マシンガン プレイスメント']){
-  await search(name);el('Skill').value='83.4567';el('Magic').value='127.8901';el('TimePeriod').value='night';el('Conditions').checked=true;
+  await search(name);el('UseCurrentAttack').checked=false;el('Attack').value='0';el('UseCurrentMagic').checked=name==='ムーン フォース';el('Skill').value='83.4567';el('Magic').value='127.8901';el('TimePeriod').value='night';el('Conditions').checked=true;
   if(el('Skills').children.length)el('Skills').children[0].children[0].value='42.1234';
   if(name==='フレイムスロワー')el('PeriodicReference').checked=true;
   if(name==='ポイズン ブレイド'){el('BladeSelected').checked=true;el('BladeMode').value='dual';}

@@ -287,7 +287,8 @@ MoE固有の主な仮定:
       <div class="combatTrialDivider"></div>
       <h3><span class="combatTrialStep">2</span> 計算条件</h3>
       <div class="combatTrialFields combatTrialBasic"><label><span id="combatCatalogPrimarySkillLabel">計算に使うスキル（技を選択）</span><input id="combatCatalogSkill" type="number" min="0" max="214748.3647" value="100" step="any"></label>
-<label>魔力（装備・Buff込みの値）<input id="combatCatalogMagic" type="number" min="0" max="1000" value="100" step="any"></label>
+<label id="combatCatalogAttackSource">攻撃力（最終値）<input id="combatCatalogAttack" aria-label="攻撃力（最終値）" type="number" min="0" value="100" step="any"><span><input id="combatCatalogUseCurrentAttack" aria-label="計算した現在の攻撃力を使う" type="checkbox" checked>計算した現在の攻撃力を使う</span><small id="combatCatalogAttackCurrentValue"></small></label>
+<label id="combatCatalogMagicSource">魔力（最終値）<input id="combatCatalogMagic" aria-label="魔力（最終値）" type="number" min="0" max="1000" value="100" step="any"><span><input id="combatCatalogUseCurrentMagic" aria-label="計算した現在の魔力を使う" type="checkbox">計算した現在の魔力を使う</span><small id="combatCatalogMagicCurrentValue"></small></label>
 <label>世界条件<select id="combatCatalogWorld"><option value="0">通常</option><option value="1">War Age</option></select></label>
 <label>対象防御力<input id="combatCatalogDefense" type="number" min="0" value="100" step="any"></label>
 <label>対象の該当属性耐性<input id="combatCatalogResistance" type="number" min="0" value="50" step="any"></label></div>
@@ -298,8 +299,8 @@ MoE固有の主な仮定:
         <p id="combatCatalogReleaseTargetReason" class="combatTrialHelp"></p>
       </div>
       <p id="combatCatalogSkillEvidence" class="combatTrialHelp">技を選ぶと、計算に使うスキルと追加の必要スキルを表示します。</p>
-      <p class="combatTrialHelp">攻撃力・命中・武器・装備の入力は「計算」タブの現在の構成を使います。</p>
-      <p class="combatTrialHelp">使用者Aには「計算」タブで有効な装備Buffを反映します。Bの装備は未設定です。魔力は「計算」タブで求めた装備・Buff込みの値を入力してください。</p>
+      <p class="combatTrialHelp">攻撃力・魔力は手入力と現在ステータスを切り替えられます。命中・武器・装備は「計算」タブの現在の構成を使います。</p>
+      <p class="combatTrialHelp">使用者Aには「計算」タブで有効な装備Buffを反映します。Bの装備は未設定です。手入力する攻撃力・魔力は、装備・Buff込みの最終値を指定してください。</p>
       <div id="combatCatalogEquipmentFire" class="combatTrialFields" hidden><label>火属性の軽減前ダメージ（グレイシャル フォースのみ選択）<input id="combatCatalogEquipmentFireDamage" type="number" min="0" step="any" placeholder="未指定"></label></div>
     </div>
     <div class="combatTrialResults combatTrialCard">
@@ -1785,9 +1786,9 @@ MoE固有の主な仮定:
 <script src="./src/data/manual/utilityDescriptionScope.manual.js?v=20261016" defer></script>
 <script src="./src/calc/combatCalculationScope.js?v=20261017-gaps51-trap-level-input" defer></script>
 <script src="./src/data/generated/combatCatalogFilters.generated.js?v=20261017-skill-filter-mode" defer></script>
-<script src="./src/ui/combatConditionInputs.js?v=20261018-selected-inputs" defer></script>
+<script src="./src/ui/combatConditionInputs.js?v=20261020-stat-sources" defer></script>
 <script src="./src/calc/buffNumericRegistration.js?v=20261017-numeric-registration" defer></script>
-<script src="./src/ui/combatCatalogTrial.js?v=20261018-trial-save" defer></script>
+<script src="./src/ui/combatCatalogTrial.js?v=20261020-stat-sources" defer></script>
 <script src="./src/ui/buildAnalysis.js?v=20261018-final-display" defer></script>
 <script src="./src/ui/showcaseSkillPlusTotals.js?v=20261018-display-precision" defer></script>
 <script src="./src/ui/showcaseElementDamageTotals.js?v=20261018-display-precision" defer></script>
