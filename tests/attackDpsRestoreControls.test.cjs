@@ -13,3 +13,23 @@ for(const restored of routes){p.restored=restored;vm.runInContext('state=restore
 p.restored={...st,attackDps:p.defaultAttackDpsState()};vm.runInContext('state=restored',p);p.renderAttackDpsTab();assert.equal(nodes.get('attackDpsDamageSource').value,'current');assert.ok(groups.every(g=>g.hidden));console.log('DPS restore controls/results: TSV, share, defaults OK');
 
 
+
+// New native timing selectors must also survive both existing persistence paths.
+const nativeCfg={...cfg,motionProfile:'form477',weaponCategory:'12',manualAttackBonus:true,criticalCancel:false};
+st.attackDps=nativeCfg;p.collectConfig=()=>({inputs:{},state:st});
+for(const restored of [p.parseConfigFromTsv(p.serializeConfigAsTsv({inputs:{},state:st})).state,p.collectShowcaseShareConfig().state]){
+ p.restored=restored;vm.runInContext('state=restored',p);p.renderAttackDpsTab();
+ assert.equal(nodes.get('attackDpsMotionProfile').value,'form477');assert.equal(nodes.get('attackDpsWeaponCategory').value,'12');assert.equal(nodes.get('attackDpsCriticalCancel').checked,false);
+ const expected=p.calculateAttackDps({cfg:nativeCfg});assert.equal(result.periodSec,expected.periodSec);assert.equal(result.continuousDps,expected.continuousDps);assert.ok(Number.isFinite(result.continuousDps));
+}
+console.log('Native motion/category and normal-attack TSV/share controls and numeric result retained');
+
+// Bare hands must retain an explicit zero weapon delay in both save formats.
+st.attackDps={...nativeCfg,weaponCategory:'1',manualWeaponDelay:0};
+p.collectConfig=()=>({inputs:{},state:st});
+for(const restored of [p.parseConfigFromTsv(p.serializeConfigAsTsv({inputs:{},state:st})).state,p.collectShowcaseShareConfig().state]){
+ p.restored=restored;vm.runInContext('state=restored',p);p.renderAttackDpsTab();
+ assert.equal(nodes.get('attackDpsWeaponCategory').value,'1');assert.equal(nodes.get('attackDpsManualWeaponDelay').value,0);
+ assert.equal(result.supported,true);assert.equal(result.baseReuseDelay,182);assert.ok(Number.isFinite(result.continuousDps));
+}
+console.log('Bare hands category and explicit zero delay retained through TSV/share');

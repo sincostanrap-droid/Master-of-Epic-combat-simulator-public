@@ -261,3 +261,4 @@ tools/build-pages.py
 tools/prepare-publication-manifest.py
 worker/README.md
 worker/moe-idb-proxy-worker.js
+tests/attackDpsAllWeapons.test.cjs

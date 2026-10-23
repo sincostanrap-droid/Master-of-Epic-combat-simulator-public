@@ -35,7 +35,7 @@ function renderAttackDpsResult(metrics=null) {
     : `<div class="attackDpsOk">選択した武器・モーションとクリティカル設定で計算しています。</div>`;
 
   if (!r.supported) {
-    el.innerHTML = warnHtml + '<p>対応モーションを選択してください。対象外の武器には下限値を流用しません。</p>';
+    el.innerHTML = warnHtml + (Number.isFinite(r.motionLockSec) ? '<p>動作側の待機時間：'+fmt(r.motionLockSec,1)+'秒。必要な条件を確認できないため、DPSは表示しません。</p>' : '<p>武器種とモーションを選択してください。</p>');
     return;
   }
   const weaponText = r.weapon
@@ -46,8 +46,8 @@ function renderAttackDpsResult(metrics=null) {
     attackDpsResultCard("攻撃本体の1発ダメージ", fmt(r.damage, 0), r.cfg.damageSource === "current" ? "計算タブ参照" : "手入力（追撃を含む値なら再加算しません）"),
     ...(r.cfg.damageSource==='current'&&metrics?.attackFollowups?.rows?.length?[attackDpsResultCard("追撃のDPS用追加期待値",r.followupComplete?fmt(r.followupExpected, 1):r.followupExpected>0?`${fmt(r.followupExpected, 1)}（対応分）`:'未対応',r.followupComplete?'発動率を1回だけ適用':'未反映の追撃あり')]:[]),
     attackDpsResultCard("短縮後ディレイ", fmt(r.delaySec, 1) + " 秒", r.cfg.equipmentBuffDelaySource === "auto" ? "装備・Buffから計算" : "手入力の補正で計算"),
-    attackDpsResultCard("実測周期の下限", fmt(r.motionLockSec, 1) + " 秒", r.motion.label),
-    attackDpsResultCard("実アタック周期", fmt(r.periodSec, 1) + " 秒", r.cfg.criticalCancel ? "クリキャン前提" : "非キャンセル"),
+    attackDpsResultCard("動作側の待機時間", fmt(r.motionLockSec, 1) + " 秒", r.motion.label),
+    attackDpsResultCard("理論アタック周期", fmt(r.periodSec, 1) + " 秒", r.cfg.criticalCancel ? "クリティカル連続使用" : "通常アタック"),
     attackDpsResultCard(`継続DPS${r.followupComplete?'':'（対応分）'}`, fmt(r.continuousDps, 1), `命中率 ${fmt(r.hitRate * 100, 1)}%`),
     attackDpsResultCard(`${fmt(r.simSeconds, 1)}秒の期待総ダメージ`, fmt(r.expectedTotalDamage, 0), `${fmt(r.hitCount, 1)}回相当 / 定常周期換算`),
     attackDpsResultCard("1分あたり攻撃回数", fmt(r.attacksPerMinute, 1), "理論値")
@@ -63,8 +63,8 @@ function renderAttackDpsResult(metrics=null) {
       <div>装備・Buffのディレイ補正: 上限適用前 ${fmt(r.equipBuffRaw, 1)} → 適用後 ${fmt(r.equipBuffCapped, 1)} / スキル・アタック短縮 ${fmt(r.attackDelayBuff, 1)} / ST補正 ${fmt(r.stBonus, 1)} / 手動補正 ${fmt(r.manualBonus, 1)}</div>
       <div>ディレイ短縮自動参照: 装備 ${fmt(r.delayAuto.equipmentTotal, 1)} / Buff ${fmt(r.delayAuto.buffTotal, 1)} / 合計 ${fmt(r.delayAuto.total, 1)}${r.cfg.equipmentBuffDelaySource === "auto" ? "（採用中）" : "（手入力のため未採用）"}</div>
       <div>参照元: ${attackDpsDelaySourceListHtml(r.delayAuto)}</div>
-      <div>短縮後ディレイ = 武器ディレイ × ${fmt(r.delayMultiplier, 1)} = ${fmt(r.shortenedDelay, 1)}（${fmt(r.delaySec, 1)}秒）</div>
-      <div>周期 = max(短縮後ディレイ秒 ${fmt(r.delaySec, 1)}, 実測周期下限 ${fmt(r.motionLockSec, 1)}) = ${fmt(r.periodSec, 1)}秒</div>
+      <div>短縮後ディレイ = 基礎再使用値 ${fmt(r.baseReuseDelay, 1)}${r.unarmedBaseDelay ? "（素手の基本値182を加算）" : ""} × ${fmt(r.delayMultiplier, 1)} = ${fmt(r.shortenedDelay, 1)}（${fmt(r.delaySec, 1)}秒）</div>
+      <div>周期 = max(短縮後ディレイ秒 ${fmt(r.delaySec, 1)}, 動作待ち ${fmt(r.motionLockSec, 1)}) = ${fmt(r.periodSec, 1)}秒</div>
       <div>${fmt(r.simSeconds,1)}秒内ヒット数 = ${fmt(r.hitCount, 1)}回相当（定常換算） / 期待総ダメージ = ${fmt(r.expectedTotalDamage, 0)}</div>
       ${r.followupExpectedActivations.map(row=>`<div>${escapeHtml(row.name)}: 期待発動 ${fmt(row.activations, 1)}回 / 期待ダメージ発生 ${fmt(row.packets, 1)}回</div>`).join('')}
     </details>

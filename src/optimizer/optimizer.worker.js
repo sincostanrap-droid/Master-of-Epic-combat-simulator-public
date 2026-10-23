@@ -15,7 +15,7 @@ importScripts(
   "../calc/orderedStats.js?v=20261006-product-formulas",
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
-  "../domain/attackDpsState.js?v=20261009-weapon-procs",
+  "../domain/attackDpsState.js?v=20261023-all-weapons",
   "../domain/catalogData.js?v=20261009-weapon-procs",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",

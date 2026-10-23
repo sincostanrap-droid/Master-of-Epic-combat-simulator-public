@@ -59,13 +59,23 @@ function bindAttackDpsControls() {
   };
 
   const motionSelect = byId("attackDpsMotionProfile");
-  if (motionSelect) {
-    const key = attackDpsWeaponMotionKey(selectedWeaponForCalc(state));
-    motionSelect.innerHTML = '<option value="auto">現在武器から選択</option>' +
-      Object.entries(ATTACK_DPS_REMOTE_MOTIONS).filter(([id]) => cfg.weaponDelaySource === "manual" || id === key)
-      .map(([id, motion]) => '<option value="' + id + '">' + motion.label + '</option>').join("");
-    if (cfg.weaponDelaySource !== "manual" && cfg.motionProfile !== key) cfg.motionProfile = "auto";
+  if (motionSelect && !motionSelect._attackDpsOptionsReady) {
+    motionSelect._attackDpsOptionsReady=true;
+    const option = ([id,m])=>'<option value="'+id+'">'+escapeHtml(m.label)+'</option>';
+    const profiles=Object.entries(ATTACK_DPS_MOTION_PROFILES);
+    motionSelect.innerHTML = '<option value="auto">変身・モーション変更なし（通常人型）</option>' +
+      '<optgroup label="変身">'+profiles.filter(([id])=>id.startsWith('form')&&id!=='form8').map(option).join('')+'</optgroup>' +
+      '<optgroup label="モーション変更">'+profiles.filter(([id])=>id.startsWith('motion')).map(option).join('')+'</optgroup>' +
+      '<optgroup label="以前の保存設定">'+Object.entries(ATTACK_DPS_REMOTE_MOTIONS).map(option).join('')+'</optgroup>';
   }
+  const categorySelect=byId('attackDpsWeaponCategory');
+  if (categorySelect && !categorySelect._attackDpsOptionsReady) {
+    categorySelect._attackDpsOptionsReady=true;
+    categorySelect.innerHTML='<option value="auto">現在の計算武器から自動選択（弓・銃）</option>'+Object.entries(ATTACK_DPS_WEAPON_CATEGORIES).map(([id,label])=>'<option value="'+id+'">'+escapeHtml(label)+'</option>').join('');
+  }
+
+  bindSelect('attackDpsWeaponCategory','weaponCategory');
+
   bindSelect("attackDpsMotionProfile", "motionProfile");
   bindSelect("attackDpsDamageSource", "damageSource");
   bindNumber("attackDpsManualDamage", "manualDamage");
@@ -98,7 +108,7 @@ function createAttackDpsTab(panel) {
     <div class="attackDpsHeader">
       <div>
         <h2>アタックDPS α</h2>
-        <p class="small">通常アタックの1秒あたりのダメージを計算します。初期設定はクリティカル100%・クリティカル時のモーションキャンセルありです。実際の条件に合わせて変更してください。</p>
+        <p class="small">通常アタックの1秒あたりのダメージを計算します。攻撃種別と、ゲーム内で使用する変身・モーションを指定してください。ダメージと命中率も選択した攻撃種別に合わせてください。</p>
       </div>
       <button type="button" id="attackDpsCopyCurrent">現在構成を手入力欄へ反映</button>
     </div>
@@ -161,13 +171,15 @@ function createAttackDpsTab(panel) {
       </fieldset>
 
       <fieldset>
-        <legend>実測モーション（クリキャン）</legend>
-        <label>武器・モーション
+        <legend>武器とモーション</legend>
+        <label>武器の種類<select id="attackDpsWeaponCategory"></select></label>
+        <p class="small">近接武器は、武器名の例を参考に種類を選んでください。ダメージと武器ディレイは上の参照設定を使います。素手で武器を持たない場合は、武器ディレイを手入力で0にしてください。</p>
+        <label>変身・モーション変更
           <select id="attackDpsMotionProfile"></select>
         </label>
-        <p class="small">片手銃：タックル 約0.944秒 / 両手銃：猫又 約0.800秒 / 弓：猫又 約0.768秒。対応するモーションをゲーム内で使用する前提です。</p>
-        <label class="checkLine"><input id="attackDpsCriticalCancel" type="checkbox">クリティカル時モーションキャンセルを適用</label>
-        <p class="small">連続攻撃の実測下限です。初撃の発生時間ではありません。その他の武器・非キャンセルは未検証です。</p>
+        <p class="small">変身とモーション変更は選択したものを使用する前提です。組み合わせによる重ね掛けは計算しません。</p>
+        <label class="checkLine"><input id="attackDpsCriticalCancel" type="checkbox">クリティカルアタックの連続使用（OFFで通常アタック）</label>
+        <p class="small">通常アタックとクリティカルアタックは待機時間が異なります。初撃の発生時間ではありません。</p>
       </fieldset>
 
       <fieldset>
@@ -176,7 +188,7 @@ function createAttackDpsTab(panel) {
           <input id="attackDpsSimSeconds" class="compactNumberInput" type="number" step="1" min="1">
         </label>
         <div class="attackDpsNote small">
-          ディレイ値 × 0.01658秒で換算し、実測周期の下限と比較します。スキル短縮・アタック短縮は0なら対応武器のマスタリーを自動適用し、0以外は手入力値を使います。同じ枠の短縮は重複加算しません。時間窓の値は定常周期による換算で、初撃・弾着距離・ラグは含みません。
+          再使用待ちと動作待ちの長い方を攻撃周期とし、1更新16msで換算します。素手は武器ディレイに基本値182を加算し、武器使用時の基礎再使用値は最低150です。再使用待ちは整数に切り捨てます。スキル短縮・アタック短縮は0なら対応武器のマスタリーを自動適用し、0以外は手入力値を使います。同じ枠の短縮は重複加算しません。時間窓の値は定常周期による換算で、初撃・弾着距離・ラグは含みません。
         </div>
       </fieldset>
     </div>
