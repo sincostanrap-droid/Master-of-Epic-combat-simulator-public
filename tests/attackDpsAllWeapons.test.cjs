@@ -19,3 +19,12 @@ for(const category of [1,2,3,4,5,6,7,8,9,10,12,13,15,18,19])for(const criticalCa
 }
 const bare=run({weaponCategory:'1',manualWeaponDelay:0});assert.equal(bare.supported,true);assert.equal(bare.baseReuseDelay,182);
 console.log('All weapon categories, normal/critical, delay boundaries and unsupported inputs passed');
+
+vm.runInContext(fs.readFileSync('src/ui/attackDpsControls.js','utf8'),c);
+c.escapeHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const compact=c.attackDpsMotionOptionsHtml('auto');assert.equal((compact.match(/<option /g)||[]).length,10);
+assert.ok(compact.includes('猫又'));assert.ok(compact.includes('ショルダー タックル'));
+const saved=c.attackDpsMotionOptionsHtml('form353');assert.equal((saved.match(/<option /g)||[]).length,11);assert.ok(saved.includes('value="form353"'));assert.ok(saved.includes('保存中の設定'));
+assert.equal(c.normalizeAttackDpsState({motionProfile:'form353'}).motionProfile,'form353');
+assert.equal((c.attackDpsMotionOptionsHtml('form477').match(/<option /g)||[]).length,10);
+console.log('Ten motion options, saved out-of-list and legacy profile preservation passed');

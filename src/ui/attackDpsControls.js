@@ -37,6 +37,28 @@ function updateAttackDpsManualVisibility() {
   });
 }
 
+// Compact alternatives: broad speed candidates plus weapon-specific comparisons.
+// Keep the full timing table for restoring existing configurations.
+const ATTACK_DPS_MOTION_SHORTLIST = [
+  ['form477','猫又'],
+  ['motion751','ショルダー タックル'],
+  ['form405','リザードマン フォーム'],
+  ['form273','SGK フォーム'],
+  ['form494','ブラック ライノー フォーム'],
+  ['form883','夏天清魚フォーム'],
+  ['form454','犬変身'],
+  ['form810','トイソルジャー フォーム'],
+  ['motion446','免許皆伝（比較用）']
+];
+function attackDpsMotionOptionsHtml(selected) {
+  const rows=[['auto','変身・モーション変更なし（通常人型）'],...ATTACK_DPS_MOTION_SHORTLIST];
+  if (!rows.some(([id])=>id===selected)) {
+    const saved=ATTACK_DPS_MOTION_PROFILES[selected] || ATTACK_DPS_REMOTE_MOTIONS[selected];
+    if (saved) rows.push([selected,saved.label+'（保存中の設定）']);
+  }
+  return rows.map(([id,label])=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(label)+'</option>').join('');
+}
+
 function bindAttackDpsControls() {
   const cfg = attackDpsState();
   const bindNumber = (id, key) => {
@@ -59,15 +81,12 @@ function bindAttackDpsControls() {
   };
 
   const motionSelect = byId("attackDpsMotionProfile");
-  if (motionSelect && !motionSelect._attackDpsOptionsReady) {
-    motionSelect._attackDpsOptionsReady=true;
-    const option = ([id,m])=>'<option value="'+id+'">'+escapeHtml(m.label)+'</option>';
-    const profiles=Object.entries(ATTACK_DPS_MOTION_PROFILES);
-    motionSelect.innerHTML = '<option value="auto">変身・モーション変更なし（通常人型）</option>' +
-      '<optgroup label="変身">'+profiles.filter(([id])=>id.startsWith('form')&&id!=='form8').map(option).join('')+'</optgroup>' +
-      '<optgroup label="モーション変更">'+profiles.filter(([id])=>id.startsWith('motion')).map(option).join('')+'</optgroup>' +
-      '<optgroup label="以前の保存設定">'+Object.entries(ATTACK_DPS_REMOTE_MOTIONS).map(option).join('')+'</optgroup>';
+  const extraProfile=cfg.motionProfile==='auto' || ATTACK_DPS_MOTION_SHORTLIST.some(([id])=>id===cfg.motionProfile) ? '' : cfg.motionProfile;
+  if (motionSelect && motionSelect._attackDpsOptionsKey !== extraProfile) {
+    motionSelect._attackDpsOptionsKey=extraProfile;
+    motionSelect.innerHTML=attackDpsMotionOptionsHtml(cfg.motionProfile);
   }
+
   const categorySelect=byId('attackDpsWeaponCategory');
   if (categorySelect && !categorySelect._attackDpsOptionsReady) {
     categorySelect._attackDpsOptionsReady=true;
