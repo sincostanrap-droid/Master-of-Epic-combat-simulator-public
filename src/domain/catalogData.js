@@ -8,7 +8,9 @@ const CATALOG_SCRIPT_URLS = [
   "src/data/generated/skillBuffCompatibility.generated.js",
   "src/data/generated/damageBuffCompatibility.generated.js",
   "src/data/manual/buffRules.manual.js",
-  "src/data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment"
+  "src/data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment",
+  "src/data/generated/catalogUpdate20261020.generated.js?v=20261020-raid",
+  "src/data/generated/catalogUpdate20261027.generated.js?v=20261027"
 ];
 let catalogScriptsPromise = null;
 let equipmentBuffRuntimeScriptsPromise = null;

@@ -109,6 +109,9 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     damage:effectiveDamage,performance:1,raceMultiplier:raceCoeff/.2,cachedAdditive:cache});
   const ordinaryHit = cache => reference.hit({weaponSkillInteger:Math.round(weaponSkillHit*10000),
     performance:skillMod,raceMultiplier:race.mult.hit,cachedAdditive:cache});
+  const hitWithMagic = values => globalThis.MOE_EQUIPMENT_BUFF_NUMERICS?.magicToHit(
+    orderedState.composite,values.magic,ordinaryHit(values.hitCache),inputs.equipmentBuffWorld ?? 0)
+    || {after:ordinaryHit(values.hitCache),rate:0,addition:0};
   const conversionAt = values => calcConversions(st,{...values,str:baseStats.str,drunk:baseStats.drunk});
   const addConversions = (value,conversion) => {
     for (const source of conversion.sourceOrder) value=f(value+conversion.sourceAdds[source]);
@@ -122,13 +125,14 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     equipment:equipmentRows,rows:normalizeCompositeRows(orderedState.composite),
     flat:normalizeFlatRows(orderedState),pct:orderedState.pct || [],attackCap:+inputs.atkCap,
     attackReference:values=>addConversions(Math.max(0,values.attackCache,ordinaryAttack(values.attackCache)),conversionAt(values)),
-    hitReference:values=>Math.max(0,values.hitCache,ordinaryHit(values.hitCache))
+    hitReference:values=>Math.max(0,values.hitCache,hitWithMagic(values).after)
   });
   const stats = {...baseStats,magic:ordered.values.magic,speed:ordered.values.speed};
   const defense = ordered.values.defense;
   const pctStats = {stats,steps:ordered.steps.filter(s=>s.percentage && ["magic","speed"].includes(s.key))
     .map(s=>({...s,percent:s.amount,add:s.delta}))};
-  const playerHit = ordinaryHit(ordered.values.hitCache);
+  const magicToHitConversion = hitWithMagic(ordered.values);
+  const playerHit = magicToHitConversion.after;
   const totalStats = {...ordered.values,hit:playerHit};
   const statBeforeLimits = ordered.rawValues;
   const effectiveStatIncreases = {};
@@ -253,7 +257,7 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
 
   return {
     ...(unsupportedBuffs.length?{unsupportedBuffs}:{}),
-    skillPlusTotals, attackDelayBSources, totalStats, statBeforeLimits, effectiveStatIncreases,
+    skillPlusTotals, attackDelayBSources, totalStats, statBeforeLimits, effectiveStatIncreases, magicToHitConversion,
     orderedStatSteps:ordered.steps, ammoPerformance, effectiveDamage,
     stats, pctStats, conv, pctAtkCalc, spirit, magicCoeff, baseMagicFromSpirit, flatStatRaw, equipmentRaw, extraStats, armorAC, defense,
     racialAtk, weaponAtk, weaponDamage, weaponWeight, selectedWeapon, selectedAmmo, effectiveWeapon, skillModInfo, baseNaturalAtk, conversionAtk, baseAtk, flatAtkRaw, extraRawBeforePct, cappedAddRawBeforePct, cappedAddBeforePct, atkBeforePct, atkPctMode, atkBuffRaw, atkCap, atkBuffCapped, atk,

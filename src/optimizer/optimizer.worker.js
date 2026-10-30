@@ -8,15 +8,15 @@
 // Legacy calculation/catalog scripts use window for data globals only.
 // No document or DOM shim is provided: UI initializers must stay guarded.
 self.window = self;
-importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../calc/equipmentBuffNumerics.js?v=20261014-equipment', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
+importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../data/generated/catalogUpdate20261020.generated.js?v=20261020-raid', '../data/generated/catalogUpdate20261027.generated.js?v=20261027', '../calc/equipmentBuffNumerics.js?v=20261027', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
 
 importScripts(
   "../calc/clientWeaponReference.js?v=20261006-product-formulas",
   "../calc/orderedStats.js?v=20261006-product-formulas",
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
-  "../domain/attackDpsState.js?v=20261023-all-weapons",
-  "../domain/catalogData.js?v=20261009-weapon-procs",
+  "../domain/attackDpsState.js?v=20261027",
+  "../domain/catalogData.js?v=20261027",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",
   "../data/generated/attackTechniques.generated.js?v=20261008-effect-calculation",
@@ -44,10 +44,10 @@ importScripts(
   "../data/generated/weaponSpeciesTraits.generated.js?v=20261008-attack-special-2",
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
-  "../calc/combatCatalogEngine.js?v=20261014-gaps13",
-  "../main.js?v=20261014-equipment",
-  "../calc/core.js?v=20261014-equipment",
-  "./core.js?v=20261010-player-catalog"
+  "../calc/combatCatalogEngine.js?v=20261020-raid",
+  "../main.js?v=20261027",
+  "../calc/core.js?v=20261027",
+  "./core.js?v=20261027"
 );
 
 self.onmessage = event => {

@@ -151,6 +151,14 @@
  }
  function describe(bundle){
   const row=bundle.row,definitions=[row.definition,...row.dependencies].filter(Boolean),operations=[],effectIds=new Set(),timeIds=new Set();
+  const declared=row.descriptionScope;
+  const declaredDescription=declared&&row.matchStatus==='一致'&&declared.definitionId===row.internalId&&row.definition?.id===row.internalId&&
+   declared.signature===JSON.stringify(row.definition.effects.map(e=>[e.kind,e.value,e.selector,e.qualifier,e.other10,e.flags,e.other18]));
+  if(declaredDescription){
+   operations.push({definitionId:row.internalId,type:row.internalId===14684?'reflection':'utility',name:row.name,description:declared.meaning,accepted:true,evidence:declared.evidence,scope:declared.scope});
+   for(const e of row.definition.effects)if(declared.effectKinds.includes(e.kind))effectIds.add(row.internalId+':'+e.index);
+   if(declared.whole)timeIds.add(row.internalId);
+  }
   // User's summon-description scope also covers the wall-only spell whose
   // old header has no effect rows. Its1/60s body receipt is not a wall lifetime.
   const wall=row.internalId===173&&row.matchStatus==='一致'&&row.key==='magic:リコールストーンウォール'&&definitions.length===1&&row.definition.id===173&&row.definition.action_type===1&&row.definition.effect_class===3&&row.definition.counter===1&&row.definition.interval===1&&row.definition.flags===5&&!row.definition.effects.length&&!row.isAttack;
@@ -218,7 +226,7 @@
   // No blanket completion by category or by a technique's name.
   const existingCalculation=!!acceptedRequest&&requested.mode==='existing-calculation';
   const descriptionOnly=!!utilityScope?.whole||!!acceptedRequest&&['description','existing-calculation'].includes(requested.mode)||wikiOnly||!!itemBundle||definitions.length===1&&timeIds.has(row.internalId)&&!row.isAttack;
-  return {policy:'summon-motion-reflection-description-20261015',label:utilityScope?.whole?utility.label:existingCalculation?'既存計算対応':label,operations,effectIds:[...effectIds],timeIds:[...timeIds],descriptionOnly,existingCalculation,utilityScope,durationOnly:!!acceptedRequest&&requested.mode==='duration-only',
+  return {policy:'summon-motion-reflection-description-20261015',label:utilityScope?.whole?utility.label:existingCalculation?'既存計算対応':label,operations,effectIds:[...effectIds],timeIds:[...timeIds],descriptionOnly,declaredDescriptionOnly:!!declaredDescription&&declared.whole,existingCalculation,utilityScope,durationOnly:!!acceptedRequest&&requested.mode==='duration-only',
    timeNote:acceptedRequest?requested.timeNote:null,
    excludedRequirements:['召喚物・設置物のステータス、能力成長・寿命・専用行動の再現','モーションだけの技のフレーム長・戦闘状態再現'],
    meaning:'召喚対象・動作内容・反射できることは説明対応。別のダメージ・回復・軽減・能力補正は数値計算の対象'};

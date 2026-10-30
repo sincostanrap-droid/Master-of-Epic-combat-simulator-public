@@ -10844,16 +10844,16 @@ function optimizerTargetOverViolations(m, settings) {
     : [];
 }
 
-// Sources are collected after ordinary Buff conflicts are resolved. B effects
-// themselves never add: optimization assumes the chosen source is applied last.
+// Sources are collected after ordinary Buff conflicts are resolved. Since10/27,
+// eligible main-attack shortening uses the largest reduction, including unarmed.
 function attackDelayBSourcesFromResolvedState(st) {
   const sources = [];
   const skills = ["素手", "刀剣", "こんぼう", "槍", "弓", "銃器", "投げ"];
   for (const row of st.composite || []) {
     if (!row.enabled || row.excluded) continue;
-    const add = (percent, skill, excludeUnarmed=false) => {
+    const add = (percent, skill) => {
       if (Number.isFinite(percent) && percent > 0 && percent < 100 && (skill === "全武器" || skills.includes(skill))) {
-        sources.push({name:row.name || "短縮Buff", percent, skill, kind:skill === "全武器" ? "attack" : "skill", excludeUnarmed:excludeUnarmed || skill === "全武器"});
+        sources.push({name:row.name || "短縮Buff", percent, skill, kind:skill === "全武器" ? "attack" : "skill", excludeUnarmed:false});
       }
     };
     for (const effect of row.extraEffects || []) {
@@ -10866,9 +10866,9 @@ function attackDelayBSourcesFromResolvedState(st) {
       }
     }
     // Existing reviewed Berserk uses the legacy percentage field. Do not turn
-    // arbitrary percentage fields into B effects or apply Berserk to unarmed.
+    // arbitrary percentage fields into B effects.
     if (["バーサーク", "バーサーク オール"].includes(String(row.name || "").trim())) {
-      add(-Number(row.extraAttackDelayPct), "全武器", true);
+      add(-Number(row.extraAttackDelayPct), "全武器");
     }
   }
   return sources;
@@ -10884,18 +10884,14 @@ function optimizerAttackDelayBSelection(m, settings) {
   const applicable = (m?.attackDelayBSources || [])
     .filter(source => (source.skill === "全武器" || source.skill === skill) &&
       (!source.excludeUnarmed || (skill && skill !== "素手")));
-  // Attack-shortening takes precedence even when skill-shortening is stronger.
-  // Within each category the reported source must be applied last.
-  const attacks = applicable.filter(source => source.kind === "attack");
-  const candidates = attacks.length ? attacks : applicable.filter(source => source.kind === "skill");
-  return candidates.reduce((best, source) => !best || source.percent > best.percent ? source : best, null);
+  return applicable.reduce((best, source) => !best || source.percent > best.percent ? source : best, null);
 }
 
 function optimizerAttackDelayBResultText(m, settings) {
   if (!settings?.requireAttackDelayB) return "";
   const selected = optimizerAttackDelayBSelection(m, settings);
   return selected
-    ? `${selected.kind === "attack" ? "アタック短縮" : `${selected.skill}スキル短縮`} ${fmt(selected.percent, 1)}%（同種で最後に付与：${selected.name}）`
+    ? `${selected.kind === "attack" ? "アタック短縮" : `${selected.skill}スキル短縮`} ${fmt(selected.percent, 1)}%（同種の最大値：${selected.name}）`
     : "スキル短縮・アタック短縮：未達";
 }
 

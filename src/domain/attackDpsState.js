@@ -119,8 +119,7 @@ function collectAttackDpsDelaySources(st=state) {
 // path only skips normalization/Buff resolution already done by computeMetrics.
 function collectAttackDpsDelaySourcesPrepared(normalizedEquipment, resolvedBuffState) {
   const bucket = {equipmentTotal:0, buffTotal:0, total:0, sources:[], pctSources:[]};
-  bucket.masteryDelaySources = attackDelayBSourcesFromResolvedState({composite:(resolvedBuffState.composite || [])
-    .filter(row => row.catalogSource === "skillSimMastery")});
+  bucket.masteryDelaySources = attackDelayBSourcesFromResolvedState(resolvedBuffState);
   normalizedEquipment
     .filter(r => r.enabled !== false)
     .forEach(r => {
@@ -135,7 +134,8 @@ function collectAttackDpsDelaySourcesPrepared(normalizedEquipment, resolvedBuffS
       const isEquipBuff = /^装備由来[:：]/.test(r.note || "") || /装備Buff$/.test(r.name || "");
       const kind = isEquipBuff ? "装備Buff" : "Buff";
       attackDpsAddDelaySource(bucket, kind, r.name || kind, r.extraAttackDelay, r.note || "");
-      attackDpsAddDelayPctSource(bucket, kind, r.name || kind, r.extraAttackDelayPct, "攻撃ディレイ%はDPS枠には未反映");
+      if (!["バーサーク", "バーサーク オール"].includes(String(r.name || "").trim()))
+        attackDpsAddDelayPctSource(bucket, kind, r.name || kind, r.extraAttackDelayPct, "攻撃ディレイ%はDPS枠には未反映");
     });
 
   bucket.sources.sort((a,b) => a.kind.localeCompare(b.kind, "ja") || a.name.localeCompare(b.name, "ja"));
@@ -174,13 +174,15 @@ function calculateAttackDps({
   if (equipBuffRaw < -60) warnings.push("装備+攻撃ディレイBuff枠は -60 に丸めています。");
   if (cfg.equipmentBuffDelaySource === "auto" && delayAuto.pctSources.length) warnings.push("攻撃ディレイ% は現状DPS自動枠に未反映です。MoEの短縮値は通常『攻撃ディレイ -X』として登録してください。");
 
+  const shorteningSkills = category === 1 ? ["素手"] : weapon && typeof optimizerWeaponSkillNames === "function"
+    ? optimizerWeaponSkillNames(weapon) : (weapon?.weaponReq || []).map(r=>r.name);
   const masteryDelay = (delayAuto.masteryDelaySources || []).filter(row =>
-    weapon && optimizerWeaponSkillNames(weapon).includes(row.skill))
-    .reduce((best,row) => !best || row.percent > best.percent ? row : best, null);
+    row.skill === "全武器" || shorteningSkills.includes(row.skill))
+    .reduce((best,row)=>!best || row.percent>best.percent?row:best,null);
   // An explicit B value describes the final same-group choice. Zero uses the
-  // active mastery of this weapon; never multiply two B sources together.
+  // strongest eligible active source; never multiply two reductions together.
   const attackDelayBuff = attackDpsClampPercentForMultiplier(cfg.attackDelayBuff || -(masteryDelay?.percent || 0));
-  if (!cfg.attackDelayBuff && masteryDelay) warnings.push(`${masteryDelay.name}の${masteryDelay.skill}スキル短縮 ${masteryDelay.percent}%を自動適用しています。`);
+  if (!cfg.attackDelayBuff && masteryDelay) warnings.push(`${masteryDelay.name}の短縮 ${masteryDelay.percent}%を同種の最大値として自動適用しています。`);
   const stBonus = attackDpsClampPercentForMultiplier(cfg.stDelayBonus);
   const manualBonus = cfg.manualAttackBonus ? -10 : 0;
 

@@ -41,6 +41,11 @@
   function filterAdditionalInputs(){
    if(!root.MOE_COMBAT_CONDITION_INPUTS)return;
    basicRelevant=root.MOE_COMBAT_CONDITION_INPUTS.basicForBundle(compiled?.bundle);
+   try{
+    const cfg=collectConfig(),ids=new Set((root.MOE_EQUIPMENT_BUFF_NUMERICS?.records||[]).map(r=>r.id));
+    if((cfg.state.equipment||[]).some(r=>r.enabled!==false&&r.equipBuffEnabled!==false&&ids.has(Number(r.equipBuffTechnicId)))||
+       (cfg.state.composite||[]).some(r=>r.enabled!==false&&!r.excluded&&ids.has(Number(r.clientBuffDefinitionId))))basicRelevant.add('World');
+   }catch{}
    for(const key of Object.keys(basicDefaults)){const label=el(key).closest?.('label');if(label)label.hidden=!basicRelevant.has(key);}
    for(const key of ['Attack','Magic'])if(el('UseCurrent'+key)){el(key).disabled=el('UseCurrent'+key).checked;if(el(key+'CurrentValue')){const m=calculationMetrics().value;el(key+'CurrentValue').textContent='現在ステータス：'+root.MOE_COMBAT_CONDITION_INPUTS.displayNumber(key==='Attack'?m.atk:m.stats.magic);}}
    if(el('ElementStrengths')){const elements=root.MOE_COMBAT_CONDITION_INPUTS.elementStrengthElements(compiled?.bundle,root.MOE_COMBAT_NUMERICS,{bladeSelected:el('BladeSelected').checked,bladeMode:el('BladeMode').value});el('ElementStrengths').hidden=!elements.length;for(const id of [2,3,4,5,6])el('Element'+id+'Label').hidden=!elements.includes(id);}
@@ -357,7 +362,7 @@
      for(const raw of new Set(children.filter(d=>root.MOE_COMBAT_NUMERICS.generatedInputNeedsSkill(d)).map(d=>d.primary_raw))){const label=document.createElement('label'),input=document.createElement('input');label.textContent='召喚・設置物の'+(skillNames[raw]||'スキル'+raw)+'（'+children.filter(d=>d.primary_raw===raw).map(d=>d.name).join('・')+'）';input.type='number';input.min='0';input.max=String(root.MOE_COMBAT_RESOURCE_FORMULA.skillMax);input.step='any';input.value='';input.placeholder='生成体自身の現在値を指定';label.append(input);el('GeneratedSkills').append(label);generatedSkillInputs.set(raw,input);}}
     el('PrimarySkillLabel').textContent=primaryName?primaryName:'計算スキル：未確認';
     el('SkillEvidence').textContent=primaryName?'計算に使うスキル：'+primaryName+(bundle.row.definition?.action_type===1?'。魔力も入力してください。':'。'):'計算に使うスキルは未確認です。';
-    for(const req of ref?.requirements||[]){if(req.rawSkill===primary)continue;const label=document.createElement('label'),input=document.createElement('input');label.textContent=(req.name||'未照合スキル')+'（必要スキル：'+req.required+'）';input.type='number';input.value='100';input.min='0';input.max=String(root.MOE_COMBAT_RESOURCE_FORMULA.skillMax);input.step='any';label.append(input);el('Skills').append(label);skillInputs.set(req.name,input);}
+    for(const req of ref?.requirements||[]){if(req.rawSkill===primary)continue;const label=document.createElement('label'),input=document.createElement('input');const upper=req.maximum!=null;label.textContent=(req.name||'未照合スキル')+'（必要スキル：'+(upper?req.maximum+'以下':req.required)+'）';input.type='number';input.value=upper?String(req.maximum):'100';input.min='0';input.max=String(upper?req.maximum:root.MOE_COMBAT_RESOURCE_FORMULA.skillMax);input.step='any';label.append(input);el('Skills').append(label);skillInputs.set(req.name,input);}
     for(const d of bundle.row.dependencies){const name=skillNames[d.primary_raw];if(bundle.row.sameCasterPhysicalChildren?.includes(d.id)&&d.primary_raw===primary)continue;if(!name||skillInputs.has(name))continue;const label=document.createElement('label'),input=document.createElement('input');label.textContent=name+'（追加効果を使う人物のスキル）';input.type='number';input.value='100';input.min='0';input.max=String(root.MOE_COMBAT_RESOURCE_FORMULA.skillMax);input.step='any';label.append(input);el('Skills').append(label);skillInputs.set(name,input);}
     const bladeDefs=root.MOE_COMBAT_NUMERICS.bladeInputs(bundle);el('BladeConditions').hidden=!bladeDefs.length;
     for(const d of bladeDefs){const name=skillNames[d.primary_raw];if(!name||skillInputs.has(name))continue;bladeOnlySkills.add(name);const label=document.createElement('label'),input=document.createElement('input');label.textContent=name+'（追撃する人物のスキル）';input.type='number';input.value='100';input.min='0';input.max=String(root.MOE_COMBAT_RESOURCE_FORMULA.skillMax);input.step='any';label.append(input);el('Skills').append(label);skillInputs.set(name,input);}
@@ -394,7 +399,7 @@
     el('WikiConditions').hidden=!(area||lifetime||transfer);el('AreaConditions').hidden=!area;el('LifetimeConditions').hidden=!lifetime;el('TransferConditions').hidden=!transfer;
     for(const k of ['AreaBuffRemaining','LifetimeInitial','LifetimeRemaining','TransferRecords'])el(k).value='';
     el('AreaElapsed').value='0';el('LifetimeElapsed').value='0';el('LifetimeCategory').value='buff';el('LifetimePresent').value='yes';el('AreaTargetType').value='';el('AreaInside').value='';
-    el('Info').textContent=playerText(bundle.row.info)+'\n必要スキル：'+(bundle.row.definition?.requirements||[]).map(q=>q.skill+' '+q.min).join('・')+'\n触媒：'+(bundle.row.metadata?.catalyst||'未確認')+(ref?.materialId?'（'+ref.materialCount+'個）':'');
+    el('Info').textContent=playerText(bundle.row.info)+'\n必要スキル：'+(bundle.row.definition?.requirements||[]).map(q=>q.skill+' '+(q.max!=null?q.max+'以下':q.min)).join('・')+'\n触媒：'+(bundle.row.metadata?.catalyst||'未確認')+(ref?.materialId?'（'+ref.materialCount+'個）':'');
 
     el('Message').textContent='効果・対象条件を確認してください';render();
    }catch(e){if(token===version){el('Message').textContent=e.message+'。自動再試行は行いません';el('Numbers').textContent='対象データを読み込めませんでした';showSummary(null,null,[],e.message,'読込み失敗');}}
@@ -433,15 +438,16 @@
      if(r.ammunitionRecovery){const q=r.ammunitionRecovery;lines.push('  弾回収：'+(q.supported?(q.requested?q.count+'個の取得要求（所持品への追加は別）':'今回の条件では取得要求なし'):'未計算 / '+q.reason));if(q.scope)lines.push('    '+q.scope);}
   }
   function renderNumbers(){latestNumericInputs=null;if(!root.MOE_COMBAT_NUMERICS)return;try{
+   for(const bound of compiled.bundle.row.upperSkillRequirements||[]){const text=skillInputs.get(bound.name)?.value?.trim(),value=text===''||text==null?NaN:Number(text);if(!Number.isFinite(value)||value<0||value>bound.maximum)throw Error(compiled.bundle.row.name+'には'+bound.name+' '+bound.maximum+'以下が必要です');}
    const actionScope=root.MOE_COMBAT_CALCULATION_SCOPE?.describe(compiled.bundle);
    const optionalGenerated=el('SummonBaseVariant').checked&&root.MOE_COMBAT_NUMERICS.generatedInputChildren(compiled.bundle).length>0;
    const optionalSummon=el('SummonBaseVariant').checked&&(actionScope?.operations.some(e=>e.type==='summon')||optionalGenerated);
     const actionLines=actionScope?.operations.map(e=>({summon:'召喚・生成：',motion:'動作：',reflection:'反射：',presentation:'表示・演出：',appearance:'変身：',inspection:'鑑定：',theft:'窃盗：','existing-attack':'既存の通常攻撃：','item-bundle':'セットアイテム：'}[e.type]||'作用：')+e.name+' / '+e.description+(e.accepted?'\n'+(e.mode==='description-known-time'?'効果説明・判明時間を表示':e.mode==='existing-calculation'?'既存計算を利用':e.mode==='meaning-only'?'用途確認（数値計算は未対応）':e.mode==='duration-only'?'変身量の計算は不要。時間を別表示':'説明対応（数値計算不要）'):'\n'+e.remaining)+(e.scope?'\n'+e.scope:'')+(e.timeNote?'\n'+e.timeNote:'')+(e.identityStatus?'\n'+e.identityStatus:''))||[];
     actionLines.push(...(compiled.bundle.row.numericConditions||[]).map(note=>'計算条件：'+note));
-    if(actionScope?.utilityScope?.whole&&!optionalGenerated){
+    if((actionScope?.utilityScope?.whole||actionScope?.declaredDescriptionOnly)&&!optionalGenerated){
      const value=key=>{const text=el(key).value.trim();return text!==''&&Number.isFinite(+text)?+text:undefined;};
      const p={casterElementStrengthByElement:elementStrengthInputs(),skill:value('Skill'),magic:sourceStat('Magic'),world:value('World'),resistance:value('Resistance'),targetDefense:value('Defense'),seed:value('Seed'),targetAmplificationAllowed:el('Amplification').value==='yes',skills:Object.fromEntries([...skillInputs].map(([name,node])=>[name,node.value.trim()===''?undefined:Number(node.value)]))};
-     const knownTimes=root.MOE_COMBAT_CALCULATION_SCOPE.knownUtilityTimes(compiled.bundle,p,skillNames,root.MOE_COMBAT_NUMERICS.duration);
+     const knownTimes=actionScope.declaredDescriptionOnly?[{...root.MOE_COMBAT_NUMERICS.duration(compiled.bundle.row.definition,compiled.bundle.row,p,skillNames),definitionId:compiled.id,name:compiled.name}]:root.MOE_COMBAT_CALCULATION_SCOPE.knownUtilityTimes(compiled.bundle,p,skillNames,root.MOE_COMBAT_NUMERICS.duration);
      el('Numbers').textContent=actionLines.join('\n')+'\n'+knownTimes.map(t=>(t.conditional?'参照先（単独成立時）：'+t.name+' / ':'')+'効果時間：'+utilityTime(t)+(t.scope?'\n'+t.scope:'')).join('\n');
      showSummary(null,{...actionScope,knownTimes},actionScope.operations);return;
     }
@@ -557,14 +563,20 @@
    el('ReverseReferenceConditions').hidden=!result.effects.some(e=>e.reverseReferencePower);
    const equipment=root.MOE_EQUIPMENT_BUFF_NUMERICS?.collect(p.equipmentBuffRows,p.world);
    const firePanel=el('EquipmentFire');if(firePanel)firePanel.hidden=!(equipment?.reductions[3]>0);
+   const waterPanel=el('EquipmentWater');if(waterPanel)waterPanel.hidden=!(equipment?.reductions[4]>0);
    if(equipment?.names.length){
     lines.push('装備Buff（通常世界・有効な選択を1回ずつ適用）：'+equipment.names.join(' / '));
     if(Object.keys(equipment.skills).length)lines.push('効果計算専用のスキル加算：'+Object.entries(equipment.skills).map(([k,v])=>k+' +'+fmt(v)).join(' / ')+'。入力した必要スキル・成功率には加算しません。');
-    if(equipment.elements[4])lines.push('装備Buffの水属性効果補正：+'+fmt(equipment.elements[4]*100)+'%（倍率Mに適用。最終ダメージ全体の倍率とは別）');
+    for(const [id,name]of [[3,'火'],[4,'水'],[5,'風'],[6,'地']])if(equipment.elements[id])lines.push('装備Buffの'+name+'属性効果補正：+'+fmt(equipment.elements[id]*100)+'%（倍率Mに適用。最終ダメージ全体の倍率とは別）');
     const fireInput=el('EquipmentFireDamage')?.value;
     if(equipment.reductions[3]>0){
      lines.push('火属性要求量の軽減：'+fmt(equipment.reductions[3])+'%（このkind273を選択した条件）');
      if(fireInput?.trim()){const q=root.MOE_EQUIPMENT_BUFF_NUMERICS.incomingFire(p.equipmentBuffRows,fireInput,p.world);lines.push('軽減前の火属性要求量 '+fmt(q.before)+' → '+fmt(q.after)+'。'+q.scope);}
+    }
+    if(equipment.reductions[4]>0){
+     lines.push('水属性要求量の軽減：'+fmt(equipment.reductions[4])+'%（このkind273を選択した条件）');
+     const waterInput=el('EquipmentWaterDamage')?.value;
+     if(waterInput?.trim()){const q=root.MOE_EQUIPMENT_BUFF_NUMERICS.incomingWater(p.equipmentBuffRows,waterInput,p.world);lines.push('軽減前の水属性要求量 '+fmt(q.before)+' → '+fmt(q.after)+'。'+q.scope);}
     }
    }
    const scoped=root.MOE_COMBAT_CALCULATION_SCOPE?.assess(compiled.bundle,result),optionalIds=new Set(scoped?.effectIds||[]),stateOnlyIds=new Set((scoped?.deferredState||[]).map(e=>e.id)),conditionalById=new Map((scoped?.conditionalNumerics||[]).map(q=>[q.id,q]));

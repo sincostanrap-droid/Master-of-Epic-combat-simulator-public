@@ -13,7 +13,7 @@
   if(magic||effects.some(e=>[2,3,11,19,38,41,42,82,83,147,170,171,173,237].includes(e.kind)))add('Seed','Amplification');
   if(physical||has(8,9,28,32,38,53,89,92,94,112,115,123,169,178,217,241,242)||effects.some(e=>Object.hasOwn(numeric.craftingSelectors,e.selector)))add('Random15');
   if(physical)add('Seed');
-  if(defs.some(d=>d.action_type===2&&bundle.attack?.definition?.id!==d.id))add('ItemClass');if(defs.some(d=>[30,31].includes(d.primary_raw)))add('ShotDistance');
+  if(defs.some(d=>d.action_type===2&&bundle.attack?.definition?.id!==d.id))add('ItemClass');if(defs.some(d=>[30,31].includes(d.primary_raw)||bundle.row.rangedPhysicalDefinitions?.includes(d.id)))add('ShotDistance');
   if(effects.some(e=>e.flags&0xc00))add('TimePeriod');
   if(has(86,133)||bundle.row.dependencies?.length){add('ReferenceChain','ReferenceSimultaneous','ReferenceReceiptOrder');}
   if(has(133))add('PeriodicReference');

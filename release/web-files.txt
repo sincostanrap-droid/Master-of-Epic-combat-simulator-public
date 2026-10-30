@@ -58,6 +58,7 @@ src/data/generated/attackTechniques.generated.js
 src/data/generated/buffCatalog.generated.js
 src/data/generated/buffPresentation.generated.js
 src/data/generated/catalogEffectNames.generated.js
+src/data/generated/catalogUpdate20261020.generated.js
 src/data/generated/clientBuffEvidence.generated.js
 src/data/generated/combatBladeChildren.generated.js
 src/data/generated/combatCatalogFilters.generated.js
@@ -135,6 +136,7 @@ src/data/generated/combatNumericPages/054.json
 src/data/generated/combatNumericPages/055.json
 src/data/generated/combatNumericPages/056.json
 src/data/generated/combatNumericPages/057.json
+src/data/generated/combatNumericPages/058.json
 src/data/generated/combatNumericReference.generated.js
 src/data/generated/combatPassiveReceipts.generated.js
 src/data/generated/combatPresentationScope.generated.js
@@ -228,3 +230,4 @@ styles/catalogWorkspace.css
 styles/combatTrial.css
 styles/main.css
 styles/settingsCompact.css
+src/data/generated/catalogUpdate20261027.generated.js

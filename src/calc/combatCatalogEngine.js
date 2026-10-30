@@ -81,8 +81,8 @@
   if(effects.some(e=>e.application&&[41,147].includes(e.kind)&&[1,2,22].includes(e.selector)))pending.push({category:'不足する式・仕様',reason:'最大HP/MP/STは能力状態のみ。増減/解除と現在資源のクランプ・更新順は未確定'});
   if(effects.some(e=>e.application&&e.kind===235))pending.push({category:'必要な共通処理',reason:'効果用技能を既存の攻撃計算へ供給。回復魔法等の未解析評価先は別途保留'});
   const ref=bundle.definitions[String(row.internalId)];
-  const resourceKnown=!!ref&&!ref.unresolved&&!ref.moneyCost&&!ref.stat27Cost&&ref.requirements.every(r=>r.name);
-  if(!resourceKnown)pending.push({category:'必要な共通処理',reason:ref?.moneyCost||ref?.stat27Cost?'追加金銭/stat27資源処理・状態名照合': '資源定義/技能名照合が未確定。効果だけの適用は独立可能'});
+  const resourceKnown=!!ref&&!ref.unresolved&&!ref.resourceCostUnresolved&&!ref.moneyCost&&!ref.stat27Cost&&ref.requirements.every(r=>r.name);
+  if(!resourceKnown)pending.push({category:'必要な共通処理',reason:ref?.resourceCostUnresolved||(ref?.moneyCost||ref?.stat27Cost?'追加金銭/stat27資源処理・状態名照合': '資源定義/技能名照合が未確定。効果だけの適用は独立可能')});
   return {bundle,math,matched,key:row.key,name:row.name,id:row.internalId,effects,references:refs,pending,resourceKnown,
    applicationCount:effects.filter(e=>e.application).length,quantityCount:effects.filter(e=>e.quantity).length,
    complete:false,fullAttemptSupported:false,scope:'指定条件下の成功時効果／全技完成ではない'};

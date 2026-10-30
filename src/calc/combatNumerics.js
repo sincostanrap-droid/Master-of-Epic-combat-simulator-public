@@ -1190,6 +1190,10 @@
   }catch(error){return {...fail(error.message),category:/指定してください/.test(error.message)?'入力不足':'不足する式・仕様'};}
  }
  function evaluate(bundle,input,skillNames={}){
+  for(const bound of bundle.row.upperSkillRequirements||[]){
+   const value=number(input.skills?.[bound.name],bound.name+'（'+bound.maximum+'以下が必要）',0,inputs.skillMax);
+   if(value>bound.maximum)throw Error(bundle.row.name+'には'+bound.name+' '+bound.maximum+'以下が必要です');
+  }
   const release=bundle.row.releaseConditions;
   if(release){
    if(!release.targetTypes.includes(input.releaseTargetType))throw Error(bundle.row.name+'の計算対象を指定してください。'+release.targetReason);
