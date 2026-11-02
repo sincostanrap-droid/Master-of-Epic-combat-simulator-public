@@ -71,8 +71,10 @@ function refreshComparePresetSelect() {
   const sel = byId("comparePresetSelect");
   if (!sel) return;
   try { if (!namedPresets || typeof namedPresets !== "object") loadNamedPresetsFromStorage(); } catch {}
+  const current = sel.value;
   const names = Object.keys(namedPresets || {}).sort((a,b) => a.localeCompare(b, "ja"));
   sel.innerHTML = names.length ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("") : `<option value="">保存済みなし</option>`;
+  if (names.includes(current)) sel.value = current;
 }
 function compareMetricRows(current, base) {
   const rows = [

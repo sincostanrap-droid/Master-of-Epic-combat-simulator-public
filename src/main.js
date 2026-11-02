@@ -15620,7 +15620,7 @@ function bindCalcRefreshInput(el) {
   // Catalog and these controls already exist during application startup.
   // Combat trial controls use their own evaluator; searching and changing its
   // conditions must not run the build calculator or persist registered data.
-  if (!el || el.id === "targetPreset" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalogOverlay') || el.closest?.('#attackDpsRoot')) return;
+  if (!el || el.id === "targetPreset" || el.id === "comparePresetSelect" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalogOverlay') || el.closest?.('#attackDpsRoot')) return;
   if (el.dataset.moeCalcRefreshBound === "1") return;
   el.dataset.moeCalcRefreshBound = "1";
   let lastInputValue = null;

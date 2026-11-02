@@ -270,6 +270,7 @@ tests/storageFixedExcludedPersistence.test.cjs
 tests/tsvEscapesPersistence.test.cjs
 tests/tsvNestedSeparators.test.cjs
 tests/uiRuntimeReview.test.cjs
+tests/uiSelectionConcurrency.test.cjs
 tools/benchmark-optimizer.cjs
 tools/build-pages.py
 tools/prepare-publication-manifest.py

@@ -1,6 +1,6 @@
 const catalogCandidatePolicy=MOEEquipmentCandidatePolicy.create();
 /* Thin catalog adapter. The projection itself has no DOM or application state dependency. */
-let catalogFacetCache = new Map(), catalogFacetSources = [], catalogFacetOptionsReady = false, catalogFacetBuilding = false, catalogFacetGeneration = -1;
+let catalogFacetCache = new Map(), catalogFacetSources = [], catalogFacetOptionsReady = false, catalogFacetBuildPromise = null, catalogFacetGeneration = -1;
 function invalidateCatalogEffectFacets() { catalogFacetCache.clear(); catalogFacetOptionsReady = false; catalogFacetSources = []; if(globalThis.MOEEquipmentEffectFacetCatalog) MOEEquipmentEffectFacetCatalog.invalidate(); }
 function catalogEffectProjection(item) {
   const projection=MOEEquipmentEffectFacetCatalog.project(item);
@@ -12,17 +12,20 @@ function catalogSpecializationState() {
     axes:[0,1,2].map(i => ({key:byId('catalogSpecialAxis'+i)?.value || '', minimum:byId('catalogSpecialMin'+i)?.value || '', required:!!byId('catalogSpecialRequired'+i)?.checked})),
     showExcluded:!!byId('specialShowExcluded')?.checked, sort:byId('catalogSpecialSort')?.value || 'main'};
 }
-async function setupCatalogSpecializationOptions() {
-  if (catalogFacetBuilding) return;
+function setupCatalogSpecializationOptions() {
+  if (!catalogFacetBuildPromise) {
+    catalogFacetBuildPromise = buildCatalogSpecializationOptions().finally(() => { catalogFacetBuildPromise = null; });
+  }
+  return catalogFacetBuildPromise;
+}
+async function buildCatalogSpecializationOptions() {
   // Checking one item detects source replacement before reusing option metadata.
   const items = equipmentCatalogItems();
   if (items[0]) catalogEffectProjection(items[0]);
   if (catalogFacetOptionsReady) return;
-  catalogFacetBuilding = true;
   if(byId('catalogSpecialProgress'))byId('catalogSpecialProgress').hidden=false;
   const status = byId('catalogSpecialStatus');
   if (status) status.textContent = '候補効果を準備中…';
-  try {
   const available = new Map();
   for (let i=0;i<items.length;i++) {
     for (const f of catalogEffectProjection(items[i]).facets) available.set(f.key, f.label);
@@ -65,7 +68,6 @@ async function setupCatalogSpecializationOptions() {
   byId('catalogSpecialEnabled').disabled = false;
   if(byId('specialSearchButton')) byId('specialSearchButton').disabled = false;
   if (status) status.textContent = `${available.size}効果軸・${items.length}装備を準備しました。`;
-  } finally { catalogFacetBuilding = false; }
 }
 function catalogSpecializationPanelHtml() {
   return `<section id="catalogSpecialPanel" class="catalogSpecialPanel"><h3>1. 比較する効果を選ぶ</h3>
@@ -130,7 +132,7 @@ function catalogSpecialDetailHtml(item, spec) {
   const p=catalogEffectProjection(item);
   return '<section>'+(p.metadata.petExperience?'<h4>ペット経験値倍率</h4><p>'+escapeHtml(p.metadata.petExperience.multiplier?'単品 '+catalogFormatScore(p.metadata.petExperience.multiplier)+'倍':'倍率は旧・新値混在のため比較対象外')+'</p><p>'+escapeHtml(p.metadata.petExperience.note)+'</p><p>候補値は単品の倍率です。「最適構成を計算」では併用分類を考慮して装備全体の倍率を比較します。</p>':'')+'<h4>今回の候補効果（競合前）</h4>'+spec.axes.filter(a=>a.key).map(a=>{const f=p.facets.find(f=>f.key===a.key);return '<p><strong>'+escapeHtml(catalogFacetLabel(a.key))+': '+catalogFormatScore(f?.value||0,a.key)+'</strong><br>'+escapeHtml(f?.sources.map(s=>(s.source==='buff'?'Equipment Buff':s.source==='body'?'本体（要件補正前）':'本体/add_status')+' '+catalogFormatScore(s.value,a.key)+' ['+s.field+']').join(' / ')||'該当効果なし')+'</p>';}).join('')+'<p class="small">'+escapeHtml([p.metadata.buffName,...p.metadata.groups,p.metadata.stackRule,p.metadata.technicId].filter(Boolean).join(' / '))+'：他装備・外部Buffとの同時成立は未判定。</p></section>';
 }
-let catalogSearchMode='normal',catalogOptimizationController=null,catalogOptimizationGeneration=0;
+let catalogSearchMode='normal',catalogSearchModeGeneration=0,catalogOptimizationController=null,catalogOptimizationGeneration=0;
 function mountCatalogSpecialization(panel){
   const modes=document.createElement('div');modes.className='catalogSearchModes';modes.setAttribute('role','group');modes.setAttribute('aria-label','カタログ検索モード');
   modes.innerHTML='<button id="catalogModeNormal" aria-pressed="true">通常検索</button><button id="catalogModeSpecial" aria-pressed="false">特化検索</button>';
@@ -155,16 +157,22 @@ function mountCatalogSpecialization(panel){
   byId('specialOptimizeCancel').onclick=()=>catalogOptimizationController?.abort();
 }
 async function setCatalogSearchMode(mode){
+  const generation = ++catalogSearchModeGeneration;
+  const isCurrent = () => generation === catalogSearchModeGeneration;
   catalogSearchMode=mode;
   byId('catalogModeNormal').setAttribute('aria-pressed',String(mode==='normal'));byId('catalogModeSpecial').setAttribute('aria-pressed',String(mode==='special'));
   byId('catalogSpecialMode').hidden=mode!=='special';
   const panel=document.querySelector('[data-tab-panel="catalog"]');panel.dataset.catalogMode=mode;
   for(const selector of ['.catalogWorkspaceFilters','.catalogWorkspaceSearch','.catalogWorkspaceSort'])panel.querySelector(selector).hidden=mode==='special';
   if(mode==='special'){
-    if (!await loadCatalogScriptsOnce()) { showCatalogLoadFailure(); return; }
+    const ready = await loadCatalogScriptsOnce();
+    if (!isCurrent()) return;
+    if (!ready) { showCatalogLoadFailure(); return; }
     byId('specialSlot').innerHTML=catalogSlotOptions(equipmentCatalogItems());
     if(byId('specialSlot').dataset.saved)byId('specialSlot').value=byId('specialSlot').dataset.saved;
-    await setupCatalogSpecializationOptions();updateSpecializationOptimizationSupport();
+    await setupCatalogSpecializationOptions();
+    if (!isCurrent()) return;
+    updateSpecializationOptimizationSupport();
   }
   if(typeof restoreCatalogSearchMode==='function')restoreCatalogSearchMode(mode);else applyCatalogSearch(true);
 }
