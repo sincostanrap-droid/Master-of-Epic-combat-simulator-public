@@ -47,6 +47,10 @@ function renderAttackDpsResult(metrics=null) {
     ...(r.cfg.damageSource==='current'&&metrics?.attackFollowups?.rows?.length?[attackDpsResultCard("追撃のDPS用追加期待値",r.followupComplete?fmt(r.followupExpected, 1):r.followupExpected>0?`${fmt(r.followupExpected, 1)}（対応分）`:'未対応',r.followupComplete?'発動率を1回だけ適用':'未反映の追撃あり')]:[]),
     attackDpsResultCard("短縮後ディレイ", fmt(r.delaySec, 1) + " 秒", r.cfg.equipmentBuffDelaySource === "auto" ? "装備・Buffから計算" : "手入力の補正で計算"),
     attackDpsResultCard("動作側の待機時間", fmt(r.motionLockSec, 1) + " 秒", r.motion.label),
+    ...(r.motionBudget?.reachable?[
+      attackDpsResultCard("モーション上限に必要な装備・Buff短縮", fmt(r.motionBudget.requiredReductionPct,1)+'%', 'スキル短縮・ST・手動アタック補正は現在の条件で固定'),
+      attackDpsResultCard(r.motionBudget.additionalReductionPct>0?'上限まで追加できる短縮':'減らしても攻撃周期が変わらない短縮',fmt(r.motionBudget.additionalReductionPct||r.motionBudget.removableReductionPct,1)+'ポイント','装備・Buffのディレイ補正のみ。補正の種類を変える場合は再計算してください')
+    ]:[attackDpsResultCard('モーション上限までの短縮','装備・Buff短縮だけでは届きません','現在の武器・スキル短縮・ST条件で計算')]),
     attackDpsResultCard("理論アタック周期", fmt(r.periodSec, 1) + " 秒", r.cfg.criticalCancel ? "クリティカル連続使用" : "通常アタック"),
     attackDpsResultCard(`継続DPS${r.followupComplete?'':'（対応分）'}`, fmt(r.continuousDps, 1), `命中率 ${fmt(r.hitRate * 100, 1)}%`),
     attackDpsResultCard(`${fmt(r.simSeconds, 1)}秒の期待総ダメージ`, fmt(r.expectedTotalDamage, 0), `${fmt(r.hitCount, 1)}回相当 / 定常周期換算`),

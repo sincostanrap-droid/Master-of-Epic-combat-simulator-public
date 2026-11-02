@@ -1,6 +1,18 @@
 // Numerical effects are independent of HP storage, action success and clocks.
 (function(root){'use strict';
  const common=typeof module!=='undefined'&&module.exports;
+ const chargeDefinitions={3745:[3745,3746,3747,3748],11775:[11775,11776,11777,11778,11779]};
+ function chargedBundle(bundle,input){
+  const ids=chargeDefinitions[bundle.row.internalId];if(!ids)return bundle;
+  const stage=input.chargeStage!=null?Number(input.chargeStage):input.areaBuffChoice!=null?ids.indexOf(Number(input.areaBuffChoice))+1:1;
+  if(!Number.isInteger(stage)||stage<1||stage>ids.length)throw Error('チャージ段階を選択してください');
+  const d=[bundle.row.definition,...bundle.row.dependencies].find(d=>d.id===ids[stage-1]);
+  if(!d)throw Error('選択段階の定義がありません');
+  // A charge is a replacement, not the sum of every definition in the chain.
+  // Kind 86 advances to the next cast (or the final attack), not a stat bonus.
+  return {...bundle,row:{...bundle.row,internalId:d.id,definition:{...d,effects:d.effects.filter(e=>e.kind!==86)},dependencies:[],recipient:'player'}};
+ }
+
  const dep=(file,name)=>common?require('./'+file+'.js'):root[name];
  const formulas=dep('combatEffectFormulas','MOE_COMBAT_EFFECT_FORMULAS'),magic=dep('clientMagicReference','MOE_CLIENT_MAGIC_REFERENCE');
  const timing=dep('effectTiming','MOE_EFFECT_TIMING'),damage=dep('techniqueDamage','MOE_TECHNIQUE_DAMAGE'),inputs=dep('combatResourceFormula','MOE_COMBAT_RESOURCE_FORMULA');
@@ -1190,6 +1202,7 @@
   }catch(error){return {...fail(error.message),category:/指定してください/.test(error.message)?'入力不足':'不足する式・仕様'};}
  }
  function evaluate(bundle,input,skillNames={}){
+  bundle=chargedBundle(bundle,input);
   for(const bound of bundle.row.upperSkillRequirements||[]){
    const value=number(input.skills?.[bound.name],bound.name+'（'+bound.maximum+'以下が必要）',0,inputs.skillMax);
    if(value>bound.maximum)throw Error(bundle.row.name+'には'+bound.name+' '+bound.maximum+'以下が必要です');
@@ -1452,7 +1465,7 @@
    for(const e of d.effects)if([241,242].includes(e.kind)&&extensions.reactionDefs[e.selector])children.push(extensions.reactionDefs[e.selector]);}
   return new Set([...definitions,...children].flatMap(d=>d.effects.map(e=>e.kind)));
  }
- function areaBuffOptions(bundle){const received=receivedDefinitionRule(bundle.row);if(received)return received.choices.map(c=>({id:c.id,name:c.name+'（受理済みの段階）'}));const h=headerAction(bundle.row);if(h)return h.children.map(id=>({id,name:generatedActions.children[id].name}));const c=wikiHints.data.areaCandidates?.[bundle.row.internalId];if(c?.choice)return c.children.map(d=>({id:d.id,name:d.name}));const b=bundle.row.definition?.effects.map(e=>generatedActions.bindings[bundle.row.internalId+':'+e.index]).find(b=>b?.choice);return b?b.children.map(id=>({id,name:(b.candidateOnly?'候補・親未照合 ID'+id+' / ':'')+generatedActions.children[id].name})):[];}
- const api=Object.freeze({evaluate,elementStrength,channels,independentInput,duration,conditionalInputKinds,areaBuffOptions,proof,generatedInputChildren:bundle=>{const h=headerAction(bundle.row);return h?h.children.map(id=>generatedActions.children[id]):generatedInput.children(bundle);},generatedInputNeedsSkill:generatedInput.needsSkill,targetReductionEligibility:targetReduction.eligibility,targetPhysicalReductions:targetReduction.definitions,targetMagicReductions:targetReduction.magicDefinitions,wikiNotes:wikiHints.data.notes,bladeInputs:blades.inputs,guardIncomingActions:extensions.guardInputs.incoming,guardMagicInputs:extensions.magicGuardInputs,guardShields:extensions.shieldDefs.shields,magicRanges:casting.ranges,craftingSelectors:crafting.selectors,craftingSpeedSelectors:crafting.speedSelectors,npcInterruptionProfiles:common?require('../data/generated/combatNpcInterruptionProfiles.generated.js').profiles:root.MOE_COMBAT_NPC_INTERRUPTION_PROFILES?.profiles,replacementOptions:common?require('../data/generated/combatReplacementRules.generated.js').definitions:root.MOE_COMBAT_REPLACEMENT_RULES?.definitions});
+ function areaBuffOptions(bundle){const stages=chargeDefinitions[bundle.row.internalId];if(stages)return stages.map((id,i)=>({id,name:(i+1)+'段階（チャージ済み）'}));const received=receivedDefinitionRule(bundle.row);if(received)return received.choices.map(c=>({id:c.id,name:c.name+'（受理済みの段階）'}));const h=headerAction(bundle.row);if(h)return h.children.map(id=>({id,name:generatedActions.children[id].name}));const c=wikiHints.data.areaCandidates?.[bundle.row.internalId];if(c?.choice)return c.children.map(d=>({id:d.id,name:d.name}));const b=bundle.row.definition?.effects.map(e=>generatedActions.bindings[bundle.row.internalId+':'+e.index]).find(b=>b?.choice);return b?b.children.map(id=>({id,name:(b.candidateOnly?'候補・親未照合 ID'+id+' / ':'')+generatedActions.children[id].name})):[];}
+ const api=Object.freeze({evaluate,chargedBundle,chargeDefinitions,elementStrength,channels,independentInput,duration,conditionalInputKinds,areaBuffOptions,proof,generatedInputChildren:bundle=>{const h=headerAction(bundle.row);return h?h.children.map(id=>generatedActions.children[id]):generatedInput.children(bundle);},generatedInputNeedsSkill:generatedInput.needsSkill,targetReductionEligibility:targetReduction.eligibility,targetPhysicalReductions:targetReduction.definitions,targetMagicReductions:targetReduction.magicDefinitions,wikiNotes:wikiHints.data.notes,bladeInputs:blades.inputs,guardIncomingActions:extensions.guardInputs.incoming,guardMagicInputs:extensions.magicGuardInputs,guardShields:extensions.shieldDefs.shields,magicRanges:casting.ranges,craftingSelectors:crafting.selectors,craftingSpeedSelectors:crafting.speedSelectors,npcInterruptionProfiles:common?require('../data/generated/combatNpcInterruptionProfiles.generated.js').profiles:root.MOE_COMBAT_NPC_INTERRUPTION_PROFILES?.profiles,replacementOptions:common?require('../data/generated/combatReplacementRules.generated.js').definitions:root.MOE_COMBAT_REPLACEMENT_RULES?.definitions});
  if(common)module.exports=api;else root.MOE_COMBAT_NUMERICS=api;
 })(globalThis);

@@ -104,7 +104,13 @@
       return copy;
     })};
   }
-  function incomplete(row){const entry=byId.get(row.catalogRuleId);return entry?coverage(entry).some(s=>!s.supported)||!timeStatus(entry).supported||!!(entry.definition?.group&&!entry.prior)||(row.extraEffects||[]).some(e=>/入力範囲外/.test(e.name||'')):null;}
+  function incomplete(row){
+    // Cast-time numerical results supersede the original static coverage audit.
+    // Missing lifetime/state simulation does not invalidate known stat bonuses.
+    if(row.catalogNumeric?.version===1)return (row.catalogNumeric.pending||[]).length>0;
+    const entry=byId.get(row.catalogRuleId);
+    return entry?coverage(entry).some(s=>!s.supported)||(row.extraEffects||[]).some(e=>/入力範囲外/.test(e.name||'')):null;
+  }
   const api={data,byId,coverage,timeStatus,duration,channels,evaluate,metadataText,installCatalog,refreshState,incomplete,norm};
   if(common)module.exports=api;else root.MOE_WIKI_PLAYER_EFFECTS=api;
 })(globalThis);

@@ -60,6 +60,7 @@
 /src/data/generated/buffPresentation.generated.js -text
 /src/data/generated/catalogEffectNames.generated.js -text
 /src/data/generated/catalogUpdate20261020.generated.js -text
+/src/data/generated/catalogUpdate20261027.generated.js -text
 /src/data/generated/clientBuffEvidence.generated.js -text
 /src/data/generated/combatBladeChildren.generated.js -text
 /src/data/generated/combatCatalogFilters.generated.js -text
@@ -185,6 +186,7 @@
 /src/domain/equipmentEffectFacetCatalog.js -text
 /src/domain/equipmentEffectFacets.js -text
 /src/domain/equipmentSearchSpecification.js -text
+/src/domain/petBuffCatalog.js -text
 /src/domain/targetPresets.js -text
 /src/domain/wikiPlayerCatalog.js -text
 /src/main.js -text
@@ -219,6 +221,7 @@
 /src/ui/equipmentCatalogSearchCache.js -text
 /src/ui/idbImportPreview.js -text
 /src/ui/mainTabs.js -text
+/src/ui/petBuffCatalog.js -text
 /src/ui/samuraiHeartCombat.js -text
 /src/ui/settingsCompact.js -text
 /src/ui/showcase.js -text
@@ -231,4 +234,3 @@
 /styles/combatTrial.css -text
 /styles/main.css -text
 /styles/settingsCompact.css -text
-/src/data/generated/catalogUpdate20261027.generated.js -text

@@ -193,6 +193,7 @@ src/domain/equipmentCandidatePolicy.js
 src/domain/equipmentEffectFacetCatalog.js
 src/domain/equipmentEffectFacets.js
 src/domain/equipmentSearchSpecification.js
+src/domain/petBuffCatalog.js
 src/domain/targetPresets.js
 src/domain/wikiPlayerCatalog.js
 src/main.js
@@ -227,6 +228,7 @@ src/ui/effectDisplayText.js
 src/ui/equipmentCatalogSearchCache.js
 src/ui/idbImportPreview.js
 src/ui/mainTabs.js
+src/ui/petBuffCatalog.js
 src/ui/samuraiHeartCombat.js
 src/ui/settingsCompact.js
 src/ui/showcase.js
@@ -254,6 +256,8 @@ tests/elementStrengthInputs.test.cjs
 tests/equipmentPostStorage.test.cjs
 tests/finalStorageAudit.test.cjs
 tests/pagesPublicationBuild.test.py
+tests/petBuffAndUsability.test.cjs
+tests/petBuffUi.test.cjs
 tests/publicCalculationWorkflow.test.cjs
 tests/publicReleaseUx.test.cjs
 tests/publicUiPresentation.test.cjs

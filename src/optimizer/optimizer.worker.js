@@ -15,7 +15,7 @@ importScripts(
   "../calc/orderedStats.js?v=20261006-product-formulas",
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
-  "../domain/attackDpsState.js?v=20261027",
+  "../domain/attackDpsState.js?v=20261102",
   "../domain/catalogData.js?v=20261027",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",
@@ -29,7 +29,7 @@ importScripts(
   "../data/generated/combatSkillNames.generated.js?v=20261011-catalog-engine",
   "../calc/combatResourceFormula.js?v=20261011-catalog-engine",
   "../data/generated/wikiPlayerCatalog.generated.js?v=20261010-wiki41",
-  "../calc/wikiPlayerEffects.js?v=20261011-catalog-engine",
+  "../calc/wikiPlayerEffects.js?v=20261102",
   "../calc/clientNativeBuffSlotReference.js?v=20261010-combat2",
   "../calc/clientNativeBuffConflictReference.js?v=20261010-combat2",
   "../data/reference/timedCombatDefinitions20261010.js?v=20261010-combat2",
@@ -45,7 +45,7 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261027",
+  "../main.js?v=20261102",
   "../calc/core.js?v=20261027",
   "./core.js?v=20261027"
 );

@@ -7283,6 +7283,7 @@ function compositeGroupScore(r) {
 
 function buffGroupResolveScore(row, order=0, type="composite") {
   const rule = String(row?.stackRule || "").toLowerCase();
+  if(rule==='first')return 1000000000-order;
   const food = /^food:([a-f])([1-4]?)$/.exec(rule);
   if (food) return 1000000000 + (/[cd]/.test(food[1]) ? Number(food[2] || 0) * 1000000 : 0) + order;
   // same-technic/latest 系は、同一テクニックIDや手動競合グループ内で「後から来たものだけ有効」にする。
@@ -8581,6 +8582,7 @@ function reviewedBuffCatalogEffectSummary(effect, rule=null) {
   });
   for (const [key, label, unit] of [
     ["flatMagic", "魔力", ""], ["extraST", "最大ST", ""], ["extraMaxWeight", "最大重量", ""],
+    ["extraDamageReducePct", "被ダメージ軽減", "%"],
     ["extraFireRes", "火耐性", ""], ["extraWaterRes", "水耐性", ""], ["extraWindRes", "風耐性", ""],
     ["extraEarthRes", "地耐性", ""], ["extraNeutralRes", "無耐性", ""],
     ["stRegenPerMinute", "ST自然回復", "/分"],
@@ -8653,6 +8655,11 @@ function renderReviewedBuffCatalogOptions(rule) {
   options.forEach(option => {
     const control = byId("reviewedBuffCatalogOption-" + option.key);
     if (control) {
+      if(option.key==='chargeStage'&&combatBuffCatalogTransfer?.ruleId===rule.id){
+        const ids=globalThis.MOE_COMBAT_NUMERICS?.chargeDefinitions?.[rule.wikiRow?.internalId];
+        const index=ids?.indexOf(combatBuffCatalogTransfer.snapshot.inputs.areaBuffChoice);
+        if(index>=0)control.value=String(index+1);
+      }
       if(combatBuffCatalogTransfer?.ruleId===rule.id&&Object.hasOwn(combatBuffCatalogTransfer.snapshot.inputs,option.key)){
         const raw=combatBuffCatalogTransfer.snapshot.inputs[option.key],value=option.key==='targetAmplificationAllowed'&&typeof raw==='boolean'?(raw?'yes':'no'):raw;
         const valid=option.type==='number'?Number.isFinite(value)&&!(value<option.min||value>option.max):option.values.some(item=>item.value===value);
@@ -9195,6 +9202,7 @@ function compactCompositeSourceLabel(row) {
 
 function renderCompositeTable() {
   if (typeof ensureReviewedBuffCatalogButton === "function") ensureReviewedBuffCatalogButton();
+  if (typeof ensurePetBuffCatalog === 'function') ensurePetBuffCatalog();
   installCompactCompositeRowStyles();
   const tbody = document.querySelector("#compositeBuffTable tbody");
   if (!tbody) return;
@@ -9211,6 +9219,7 @@ function renderCompositeTable() {
 
 const compositeRowElements = new WeakMap();
 function makeCompositeTableRow(row, idx) {
+    if(globalThis.MOE_PET_BUFF_CATALOG?.isPet(row))return makePetBuffTableRow(row);
     const frag = document.createDocumentFragment();
     const tr = document.createElement("tr");
     tr.className = "compactCompositeMainRow";
@@ -10635,7 +10644,7 @@ function integratedOptimizerSettings() {
     forceOtherBuffs: false,
     includeCurrentConfig: byId("optimizerIncludeCurrentConfig") ? !!byId("optimizerIncludeCurrentConfig").checked : true,
     onlyBetterThanCurrent: byId("optimizerOnlyBetterThanCurrent") ? !!byId("optimizerOnlyBetterThanCurrent").checked : true,
-    evaluateCurrentEquipment: byId("optimizerEvaluateCurrentEquipment") ? !!byId("optimizerEvaluateCurrentEquipment").checked : true
+    evaluateCurrentEquipment: byId("optimizerEvaluateCurrentEquipment") ? !!byId("optimizerEvaluateCurrentEquipment").checked : false
   };
 
   // 速度改善で落ちた精度を戻せるよう、プリセットで実効値を調整する。
@@ -12257,7 +12266,7 @@ function optimizerApproximationDiagnosticsHtml() {
 function damageAuditHtml(m, inputs) {
   if (m.unsupportedBuffs?.length) {
     const {unsupportedBuffs,...known}=m;
-    return `<div class="warn">計算未対応のBuff：${unsupportedBuffs.map(escapeHtml).join(' / ')}。効果量・行動制限を計算へ反映していません。</div>`+damageAuditHtml(known,inputs);
+    return `<div class="warn">未反映の効果があるBuff：${unsupportedBuffs.map(escapeHtml).join(' / ')}。計算済みの補正は反映しています。未反映の効果はBuff登録の詳細で確認できます。</div>`+damageAuditHtml(known,inputs);
   }
   if (m.techniqueContext) return attackTechniqueSummaryHtml(m, inputs)+(typeof attackFollowupSummaryHtml==='function'?attackFollowupSummaryHtml(m):'');
   const warnings = [];
@@ -12300,7 +12309,7 @@ function damageAuditHtml(m, inputs) {
 
   const infoHtml = infos.length ? `<div class="damageAuditInfo">${infos.map(x => `※ ${escapeHtml(x)}`).join("<br>")}</div>` : "";
 
-  return `${messages}${infoHtml}${typeof attackFollowupSummaryHtml==='function'?attackFollowupSummaryHtml(m):''}
+  return `${messages}${infoHtml}<div class="damageAuditInfo">与ダメージ上昇 ${fmt((m.dmgMultiplier-1)*100,1)}%を反映済み（攻撃力に掛けてから対象の防御力を計算）。</div>${typeof attackFollowupSummaryHtml==='function'?attackFollowupSummaryHtml(m):''}
     <details class="damageAuditFormula"><summary>計算に使った武器・補正</summary><b>武器:</b> ${weapon}<br>${escapeHtml(formula)}</details>`;
 }
 
@@ -14583,7 +14592,7 @@ function clearAllEquipmentUsage() {
 }
 
 function clearAllBuffUsage() {
-  state.composite = normalizeCompositeRows(state.composite).map(row => ({...row, enabled:false}));
+  state.composite = normalizeCompositeRows(state.composite).map(row => ({...row, enabled:row.catalogSource==='pet-owner-buff-v1'}));
   ["pct", "flat", "conv", "dmg", "special", "post", "other"].forEach(key => {
     state[key] = Array.isArray(state[key]) ? state[key].map(row => ({...row, enabled:false})) : [];
   });
@@ -15552,12 +15561,19 @@ function ensureOptimizerCoreLoaded() {
 }
 
 function bindCalcRefreshInput(el) {
+  // Search constraints are read on search. Updating them changes neither the
+  // equipped build nor its damage, and does not need a calculation listener.
+  if (el?.closest?.('.optimizerDetails')) {
+    if (el.dataset.moeCalcRefreshBound === '1') return;
+    el.dataset.moeCalcRefreshBound = '1';
+    return;
+  }
   // Catalog controls only narrow/sort the catalog. They must not trigger the
   // simulator-wide calculation, especially when the restored initial tab is
   // Catalog and these controls already exist during application startup.
   // Combat trial controls use their own evaluator; searching and changing its
   // conditions must not run the build calculator or persist registered data.
-  if (!el || el.id === "targetPreset" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial")) return;
+  if (!el || el.id === "targetPreset" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalog')) return;
   if (el.dataset.moeCalcRefreshBound === "1") return;
   el.dataset.moeCalcRefreshBound = "1";
   el.addEventListener("input", calc);

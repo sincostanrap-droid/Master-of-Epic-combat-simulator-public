@@ -4,6 +4,7 @@
  const formulaDefinitions=common?require('./combatEffectFormulas.js'):root.MOE_COMBAT_EFFECT_FORMULAS;
  const nonQuantity=new Set(meanings?.descriptionOnlyKinds||[]);
  function connect(bundle,numeric,input,old,skillNames){
+  bundle=numeric.chargedBundle?numeric.chargedBundle(bundle,{...(input.combatTrialSource?.inputs||{}),...input}):bundle;
   // Same declared starting conditions as the combat-trial UI, not guessed coefficients.
   const params=structuredClone({skill:100,magic:100,world:0,seed:10,targetDefense:100,resistance:50,targetAmplificationAllowed:true,...(input.combatTrialSource?.inputs||{}),...input});
   if(params.targetAmplificationAllowed==='yes'||params.targetAmplificationAllowed==='no')params.targetAmplificationAllowed=params.targetAmplificationAllowed==='yes';delete params.combatTrialSource;
@@ -21,6 +22,7 @@
       ...(Number.isFinite(e.count)?{count:e.count}:{}),...(Number.isFinite(e.total)?{total:e.total}:{}),...(Number.isFinite(e.intervalSeconds)?{intervalSeconds:e.intervalSeconds}:{})};
     if(e.kind===2&&bundle.row.isAttack&&!/回復/.test(record.name))record.name='ダメージ（指定したばらつき）';
     values.push(record);
+    if(canApply&&e.kind===247&&e.selector===0&&e.unit==='%'){fields.set('dmgPct',(fields.get('dmgPct')||0)+e.value);applied.push(e.id);}
     if((canApply||e.definitionId===rootId&&bundle.row.prior&&e.fields?.every(field=>Number.isFinite(old[field])&&old[field]!==0))&&[41,147].includes(e.kind)&&Array.isArray(e.fields)&&e.fields.length){for(const field of e.fields){if(Number.isFinite(e.value)){fields.set(field,(fields.get(field)||0)+e.value);applied.push(e.id);}}}
     if((canApply||e.definitionId===rootId&&bundle.row.prior&&Number.isFinite(old.extraCritRatePct))&&e.kind===112&&e.selector===1){fields.set('extraCritRatePct',(fields.get('extraCritRatePct')||0)+e.value);applied.push(e.id);}
     for(const [kind,field]of [[108,'extraAttackDelayPct'],[109,'extraMagicDelayPct']])if(e.definitionId===rootId&&e.kind===kind&&Number.isFinite(old[field])&&e.unit==='倍'){
@@ -73,6 +75,8 @@
       const relevant=root.MOE_COMBAT_CONDITION_INPUTS.forBundle(bundle,numeric);
       const options=[['World','world','世界条件（0:通常、1:War Age）',0],['Defense','targetDefense','対象防御力',100],['Resistance','resistance','対象の該当属性耐性',50],['Seed','seed','効果量のばらつき指定（標準値10）',10]];
       rule.catalogOptions=rule.catalogOptions||[];
+      const stages=numeric.chargeDefinitions?.[bundle.row.internalId];
+      if(stages&&!rule.catalogOptions.some(o=>o.key==='chargeStage'))rule.catalogOptions.push({key:'chargeStage',type:'select',label:'チャージ段階',defaultValue:'1',values:stages.map((id,i)=>({value:String(i+1),label:(i+1)+'段階'}))});
       for(const [key,name,label,value]of options)if((basic.has(key)||relevant.has(key))&&!rule.catalogOptions.some(o=>o.key===name))rule.catalogOptions.push({key:name,label,type:'number',defaultValue:value,min:0,step:key==='Seed'||key==='World'?1:'any',...(key==='World'?{max:1}:key==='Seed'?{max:4294967295}:{})});
       if(relevant.has('Amplification')&&!rule.catalogOptions.some(o=>o.key==='targetAmplificationAllowed'))rule.catalogOptions.push({key:'targetAmplificationAllowed',label:'スキル・魔力補正',type:'select',defaultValue:'yes',values:[{value:'yes',label:'補正あり'},{value:'no',label:'補正なし（基礎量）'}]});
      }}

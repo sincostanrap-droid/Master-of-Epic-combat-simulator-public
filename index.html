@@ -1567,7 +1567,7 @@ MoE固有の主な仮定:
         </label>
 </div>
 <h4>Buffと現在の構成</h4><div class="optimizerChecks">
-<label><input id="optimizerIncludeDisabledBuffs" type="checkbox" checked> OFFのBuffも候補として試す</label><label title="手動でONにしている現在構成を、探索結果とは別に必ず比較行として表示します。"><input id="optimizerIncludeCurrentConfig" type="checkbox" checked> 現在ON構成を結果に含める</label><label title="現在ON構成を基準にして、それより評価が高い候補だけを表示します。"><input id="optimizerOnlyBetterThanCurrent" type="checkbox" checked> 現在ONより良い結果だけ表示</label><label title="手動でONにしている装備セットを必ず1回評価し、その装備のままBuffだけ最適化した候補も探索に混ぜます。"><input id="optimizerEvaluateCurrentEquipment" type="checkbox" checked> 現在の装備でBuffだけ組み直す</label></div><details class="optimizerSearchOptions"><summary>検索オプション：精度・探索範囲・結果件数</summary><div class="optimizerControls"><label>検索精度
+<label><input id="optimizerIncludeDisabledBuffs" type="checkbox" checked> OFFのBuffも候補として試す</label><label title="手動でONにしている現在構成を、探索結果とは別に必ず比較行として表示します。"><input id="optimizerIncludeCurrentConfig" type="checkbox" checked> 現在ON構成を結果に含める</label><label title="現在ON構成を基準にして、それより評価が高い候補だけを表示します。"><input id="optimizerOnlyBetterThanCurrent" type="checkbox" checked> 現在ONより良い結果だけ表示</label><label title="手動でONにしている装備セットを必ず1回評価し、その装備のままBuffだけ最適化した候補も探索に混ぜます。"><input id="optimizerEvaluateCurrentEquipment" type="checkbox"> 現在の装備でBuffだけ組み直す</label></div><details class="optimizerSearchOptions"><summary>検索オプション：精度・探索範囲・結果件数</summary><div class="optimizerControls"><label>検索精度
           <select id="optimizerAccuracyPreset">
             <option value="fast">高速</option>
             <option value="balanced" selected>標準</option>
@@ -1658,9 +1658,9 @@ MoE固有の主な仮定:
   <textarea id="configBox" placeholder="JSONまたはTSVをここに貼り付けて読み込み可能"></textarea>
 </section>
 
-<script src="./src/domain/attackDpsState.js?v=20261027" defer></script>
+<script src="./src/domain/attackDpsState.js?v=20261102" defer></script>
 <script src="./src/domain/targetPresets.js?v=20261007-virtual" defer></script>
-<script src="./src/ui/attackDpsResult.js?v=20261022-all-weapons" defer></script>
+<script src="./src/ui/attackDpsResult.js?v=20261102" defer></script>
 <script src="./src/ui/attackDpsControls.js?v=20261027" defer></script>
 <script src="./src/ui/appVersionBadge.js?v=20261018-public-ux" defer></script>
 <script src="./src/ui/mainTabs.js?v=20261018-release-ux" defer></script>
@@ -1710,7 +1710,7 @@ MoE固有の主な仮定:
 <script src="src/data/generated/buffPresentation.generated.js?v=20261008-effect-calculation"></script>
 <script src="src/domain/buffDurations.js?v=20261008-effect-calculation"></script>
 <script src="src/data/generated/wikiPlayerCatalog.generated.js?v=20261010-wiki41" defer></script>
-<script src="src/calc/wikiPlayerEffects.js?v=20261015-jasper" defer></script>
+<script src="src/calc/wikiPlayerEffects.js?v=20261102" defer></script>
 <script src="src/domain/wikiPlayerCatalog.js?v=20261010-wiki41" defer></script>
 <!-- Buff trials capture catalog dependencies at initialization; keep them after the wiki modules. -->
 <script src="./src/calc/combatAttempt.js?v=20261011-defense-buffs" defer></script>
@@ -1733,7 +1733,9 @@ MoE固有の主な仮定:
 <script src="./src/ui/settingsCompact.js?v=20260928" defer></script>
 <script src="./src/data/generated/catalogEffectNames.generated.js?v=20261017-quantity-only-warnings" defer></script>
 <script src="./src/ui/effectDisplayText.js?v=20261017-quantity-only-warnings" defer></script>
-<script src="./src/main.js?v=20261027" defer></script>
+<script src="./src/domain/petBuffCatalog.js?v=20261102" defer></script>
+<script src="./src/ui/petBuffCatalog.js?v=20261102" defer></script>
+<script src="./src/main.js?v=20261102" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>
@@ -1792,12 +1794,12 @@ MoE固有の主な仮定:
 <script src="./src/calc/combatGeneratedInputNumerics.js?v=20261017-gaps51-trap-level-input" defer></script>
 <script src="./src/data/generated/combatGuardReplay.generated.js?v=20261016-gaps33-complete" defer></script>
 <script src="./src/calc/combatGuardReplayNumerics.js?v=20261016-gaps33-complete" defer></script>
-<script src="./src/calc/combatNumerics.js?v=20261030" defer></script>
+<script src="./src/calc/combatNumerics.js?v=20261102" defer></script>
 <script src="./src/data/manual/utilityDescriptionScope.manual.js?v=20261016" defer></script>
 <script src="./src/calc/combatCalculationScope.js?v=20261020-raid" defer></script>
 <script src="./src/data/generated/combatCatalogFilters.generated.js?v=20261027" defer></script>
 <script src="./src/ui/combatConditionInputs.js?v=20261030" defer></script>
-<script src="./src/calc/buffNumericRegistration.js?v=20261017-numeric-registration" defer></script>
+<script src="./src/calc/buffNumericRegistration.js?v=20261102" defer></script>
 <script src="./src/ui/combatCatalogTrial.js?v=20261030" defer></script>
 <script src="./src/ui/buildAnalysis.js?v=20261018-final-display" defer></script>
 <script src="./src/ui/showcaseSkillPlusTotals.js?v=20261018-display-precision" defer></script>

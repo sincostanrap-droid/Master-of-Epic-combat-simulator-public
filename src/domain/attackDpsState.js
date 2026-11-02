@@ -223,6 +223,22 @@ function calculateAttackDps({
   const damageFrameSec = null;
   const motionLockSec = timing ? timing[cfg.criticalCancel?1:0] * .016 : NaN;
   const periodSec = supported ? Math.max(delaySec, motionLockSec) : NaN;
+  // Find the least A reduction (0.1 percentage-point input precision) reaching
+  // the motion wall using exactly the same float32 stores and integerization.
+  const delayAtReduction = reduction => {
+    const a=f(reuseBase*Math.max((100-reduction)*f(.01),f(.4)));
+    const b=f(a*f((100+attackDelayBuff)/100));
+    return Math.trunc(f(f(b*f((100+manualBonus)/100))*f((100+stBonus)/100)))*.016;
+  };
+  let motionBudget=null;
+  if(supported){
+    let low=0,high=600;
+    if(delayAtReduction(60)<=motionLockSec){
+      while(low<high){const mid=Math.floor((low+high)/2);if(delayAtReduction(mid/10)<=motionLockSec)high=mid;else low=mid+1;}
+      const required=low/10,current=-equipBuffRaw;
+      motionBudget={reachable:true,requiredReductionPct:required,removableReductionPct:Math.max(0,current-required),additionalReductionPct:Math.max(0,required-current)};
+    }else motionBudget={reachable:false,requiredReductionPct:null,removableReductionPct:Math.max(0,-equipBuffRaw-60)};
+  }
 
   const simSeconds = Math.max(1, +cfg.simSeconds || 30);
   const hitRate = Math.max(0, Math.min(1, (+(cfg.hitRateSource === "current" ? currentHitRatePct : cfg.hitRatePct) || 0) / 100));
@@ -243,7 +259,7 @@ function calculateAttackDps({
     cfg, weapon, motion, supported, damage, currentDamage, weaponDelay, currentWeaponDelay,
     equipBuffRaw, equipBuffCapped, delayAuto, attackDelayBuff, stBonus, manualBonus,
     delayMultiplier, unarmedBaseDelay, baseReuseDelay, shortenedDelay, delaySec, fps, damageFrame, damageFrameSec,
-    motionLockSec, periodSec, simSeconds, hitRate, hitCount, expectedTotalDamage,
+    motionLockSec, periodSec, motionBudget, simSeconds, hitRate, hitCount, expectedTotalDamage,
     followupExpected,followupExpectedActivations,followupComplete,expectedDamagePerHit,
     continuousDps: periodSec > 0 ? expectedDamagePerHit * hitRate / periodSec : NaN,
     windowDps: simSeconds > 0 ? expectedTotalDamage / simSeconds : NaN,

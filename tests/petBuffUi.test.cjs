@@ -1,0 +1,25 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {context,json}=require('../tools/benchmark-optimizer.cjs');
+const p=context(undefined,{data:false});p.structuredClone=structuredClone;
+const pet=require('../src/domain/petBuffCatalog');p.MOE_PET_BUFF_CATALOG=pet;
+class El{constructor(tag){this.tag=tag;this.children=[];this.dataset={};}appendChild(c){this.children.push(c);return c;}before(c){nodes[c.id]=c;}}
+const nodes={compositeBuffTable:new El('table'),petBuffChoice:{value:'magia-bit'},petBuffLevel:{value:'150'},petBuffRegister:{},petBuffPreview:{}};
+p.document={createElement:t=>new El(t)};p.byId=id=>nodes[id]||null;
+let calcs=0,renders=0;p.calc=()=>calcs++;p.renderCompositeTable=()=>renders++;
+vm.runInContext(fs.readFileSync('src/ui/petBuffCatalog.js','utf8'),p);
+p.ensurePetBuffCatalog();assert.match(nodes.petBuffCatalog.innerHTML,/まとめて登録・更新/);assert.match(nodes.petBuffPreview.innerHTML,/4枠/);
+assert.match(nodes.petBuffPreview.innerHTML,/参考値/);assert.match(nodes.petBuffPreview.innerHTML,/実測点/);
+nodes.petBuffLevel.value='90';nodes.petBuffLevel.oninput();assert.equal(calcs,0,'preview does not recalculate build');
+const retained={name:'既存',enabled:false,flatAttack:12.345},state={composite:[retained]};p.fixture=state;vm.runInContext('state=fixture',p);
+nodes.petBuffRegister.onclick();assert.equal(calcs,1);assert.equal(renders,1);assert.equal(state.composite.length,5);assert.deepEqual(state.composite[0],retained);
+const row=p.makePetBuffTableRow(state.composite[1]);assert.ok(row.children.slice(0,4).every(td=>td.children[0].disabled));
+assert.match(row.children[4].innerHTML,/参考|目安/);
+nodes.petBuffLevel.value='120';nodes.petBuffLevel.oninput();nodes.petBuffRegister.onclick();assert.equal(state.composite.length,5,'update instead of duplicate');
+row.children.at(-1).children[0].onclick();assert.equal(state.composite.length,1,'remove whole group');assert.deepEqual(state.composite[0],retained);
+nodes.petBuffLevel.value='';nodes.petBuffLevel.oninput();assert.equal(nodes.petBuffRegister.disabled,true);
+// Result cards use the computed motion boundary; no changed damage rounding.
+vm.runInContext(fs.readFileSync('src/ui/attackDpsResult.js','utf8'),p);
+nodes.attackDpsResult={};p.attackDpsState=()=>({damageSource:'manual'});
+p.computeAttackDpsAlpha=()=>p.calculateAttackDps({cfg:{weaponCategory:'12',motionProfile:'form477',weaponDelaySource:'manual',manualWeaponDelay:150,damageSource:'manual',manualDamage:100,equipmentBuffDelaySource:'manual',equipmentBuffDelay:-60}});
+p.renderAttackDpsResult();assert.match(nodes.attackDpsResult.innerHTML,/必要な装備・Buff短縮/);assert.match(nodes.attackDpsResult.innerHTML,/59\.7%/);assert.match(nodes.attackDpsResult.innerHTML,/0\.3ポイント/);
+console.log('Pet UI: preview/register/update/group removal, locked controls, missing level and DPS budget cards passed (DOM fixture, not real browser)');
