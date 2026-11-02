@@ -17,6 +17,16 @@ assert.match(row.children[4].innerHTML,/参考|目安/);
 nodes.petBuffLevel.value='120';nodes.petBuffLevel.oninput();nodes.petBuffRegister.onclick();assert.equal(state.composite.length,5,'update instead of duplicate');
 row.children.at(-1).children[0].onclick();assert.equal(state.composite.length,1,'remove whole group');assert.deepEqual(state.composite[0],retained);
 nodes.petBuffLevel.value='';nodes.petBuffLevel.oninput();assert.equal(nodes.petBuffRegister.disabled,true);
+nodes.petBuffChoice.value='la-pucelle-avatar';nodes.petBuffChoice.onchange();
+assert.equal(nodes.petBuffLevel.disabled,true);assert.equal(nodes.petBuffRegister.disabled,false);
+assert.match(nodes.petBuffPreview.innerHTML,/レベルに依存しない/);assert.match(nodes.petBuffPreview.innerHTML,/攻撃力\+10%/);
+nodes.petBuffRegister.onclick();assert.equal(state.composite.length,2);assert.equal(state.composite[1].attackPct,10);
+assert.equal(p.makePetBuffTableRow(state.composite[1]).children[6].textContent,'固定効果');
+nodes.petBuffChoice.value='yukata-finyu';nodes.petBuffLevel.value='130';nodes.petBuffChoice.onchange();
+assert.equal(nodes.petBuffLevel.disabled,false);assert.match(nodes.petBuffPreview.innerHTML,/非戦闘時/);
+assert.match(nodes.petBuffPreview.innerHTML,/この登録に含まれない効果/);
+nodes.petBuffLevel.value='150';nodes.petBuffLevel.oninput();assert.match(nodes.petBuffPreview.innerHTML,/参考値を含む/);
+assert.match(nodes.petBuffPreview.innerHTML,/最大HP\+43/);assert.deepEqual(state.composite[0],retained);
 // Result cards use the computed motion boundary; no changed damage rounding.
 vm.runInContext(fs.readFileSync('src/ui/attackDpsResult.js','utf8'),p);
 nodes.attackDpsResult={};p.attackDpsState=()=>({damageSource:'manual'});
