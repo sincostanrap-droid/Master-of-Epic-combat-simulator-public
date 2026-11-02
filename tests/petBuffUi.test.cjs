@@ -38,6 +38,7 @@ const choose=id=>{const card=nodes.petBuffList.querySelectorAll('[data-pet-catal
 open();assert.match(nodes.petBuffCatalogOverlay.innerHTML,/role="dialog"/);assert.equal(nodes.petBuffList.cards.length,26);
 assert.equal(p.document.activeElement,nodes.petBuffSearch);assert.match(nodes.petBuffPreview.innerHTML,/4枠/);
 assert.match(nodes.petBuffPreview.innerHTML,/参考値/);assert.match(nodes.petBuffPreview.innerHTML,/実測点/);
+assert.match(nodes.petBuffPreview.innerHTML,/スキル 150\.0・魔力 152\.0/);assert.match(nodes.petBuffPreview.innerHTML,/変動の基準値/);
 nodes.petBuffLevel.value='90';nodes.petBuffLevel.oninput();assert.equal(calcs,0,'browsing does not calculate build');
 const retained={name:'既存',enabled:false,flatAttack:12.345},state={composite:[retained]};p.fixture=state;vm.runInContext('state=fixture',p);
 search('該当なし');assert.equal(nodes.petBuffList.cards.length,0);assert.equal(nodes.petBuffRegister.disabled,true);assert.match(nodes.petBuffPreview.textContent,/選んで/);

@@ -1,8 +1,9 @@
 // Owner support only. Levels/unlocks and observations: MoE pet wiki (2026-11-02).
 // Per-effect constants/durations: saved TMG0 (2026-10-27); see local survey report.
 // First-wins applies to documented Magia/dragon support groups only.
-// Observations are not a solved client level -> skill -> potency formula.
+// Verified profiles use client formulas; other observations stay references.
 (function(root){'use strict';
+ const petFormulas=typeof module!=='undefined'&&module.exports?require('../calc/petBuffFormulas.js'):root.MOE_PET_BUFF_FORMULAS;
  const url=name=>'https://wikiwiki.jp/moe-pet/'+encodeURIComponent('ペット/特殊/'+name);
  const resist=['extraNeutralRes','extraFireRes','extraWaterRes','extraWindRes','extraEarthRes'];
  const enhance=['flatAttack','flatMagic','extraHit','extraAvoid'];
@@ -35,19 +36,19 @@
   {id:'top-speed-avatar',name:'トップスピード アバター',mode:'サポート',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/トップスピード_アバター',buffs:[
    {id:7395,name:'トップスピード サポート',level:0,description:'移動速度・詠唱中の移動速度上昇',exact:{speedPct:15},displayValues:[{name:'詠唱中の移動速度倍率',value:1.1,unit:'倍'}]}
   ]},
-  {id:'crystal-luna',name:'千年結晶竜ルナ',mode:'補助モード',minLevel:50,maxLevel:150,duration:180,firstWins:true,url:url('千年結晶竜ルナ'),condition:'補助モードで付与中。Lv100の実測範囲の中間値です。マジックフォース中はモード切替不可。',buffs:[
+  {id:'crystal-luna',name:'千年結晶竜ルナ',mode:'補助モード',minLevel:50,maxLevel:150,duration:180,firstWins:true,url:url('千年結晶竜ルナ'),condition:'補助モードで付与中。マジックフォース中はモード切替不可。',buffs:[
    {id:10332,name:'ドラゴニック プロテクション',level:50,group:6766,description:'防御力・全属性耐性上昇',observations:[{fields:['extraAC',...resist],ranges:[[100,28.2,29.2]]}]},
    {id:10333,name:'ドラゴニック エンハンス',level:70,group:6769,description:'攻撃力・魔力・命中・回避上昇',observations:[{fields:enhance,ranges:[[100,22.1,23]]}]}
   ]},
-  {id:'crystal-ena',family:'crystal-ena',name:'千年結晶竜エナ',mode:'補助モード',minLevel:50,maxLevel:150,duration:180,firstWins:true,url:url('千年結晶竜エナ'),condition:'補助モード。効果量は未確認。回復モードとは同時登録しません。',buffs:[
-   {id:10332,name:'ドラゴニック プロテクション',level:50,group:6766,description:'防御力・全属性耐性上昇',pending:[{name:'防御力・全属性耐性の上昇量',reason:'エナ自身の実測値と成長式が未確認'}]},
-   {id:10333,name:'ドラゴニック エンハンス',level:70,group:6769,description:'攻撃力・魔力・命中・回避上昇',pending:[{name:'攻撃力・魔力・命中・回避の上昇量',reason:'エナ自身の実測値と成長式が未確認'}]}
+  {id:'crystal-ena',family:'crystal-ena',name:'千年結晶竜エナ',mode:'補助モード',minLevel:50,maxLevel:150,duration:180,firstWins:true,url:url('千年結晶竜エナ'),condition:'補助モード。回復モードとは同時登録しません。',buffs:[
+   {id:10332,name:'ドラゴニック プロテクション',level:50,group:6766,description:'防御力・全属性耐性上昇',pending:[{name:'防御力・全属性耐性の上昇量',fields:['extraAC',...resist],reason:'エナ自身の実測値と成長式が未確認'}]},
+   {id:10333,name:'ドラゴニック エンハンス',level:70,group:6769,description:'攻撃力・魔力・命中・回避上昇',pending:[{name:'攻撃力・魔力・命中・回避の上昇量',fields:enhance,reason:'エナ自身の実測値と成長式が未確認'}]}
   ]},
   {id:'crystal-ena-heal',family:'crystal-ena',name:'千年結晶竜エナ',mode:'回復モード',minLevel:70,maxLevel:150,url:url('千年結晶竜エナ'),condition:'条件を満たして支援Buffが付与された場合。バリアは飼い主HP90%未満、忠誠25/50以上。リバイバルは忠誠50/100以上、好きにしろ・飼い主にかかれ。',buffs:[
    {id:11705,name:'ミスティック バリア',level:70,duration:12.5,description:'80未満のダメージを無効化。80以上の攻撃で解除',displayValues:[{name:'無効化するダメージの上限（未満）',value:80,unit:'HP'}]},
    {id:11707,name:'ミスティック リバイバル',level:120,duration:180,description:'自動蘇生時にHP・MP・STを全回復',displayValues:[{name:'蘇生時HP・MP・ST',value:100,unit:'%'}]}
   ]},
-  ...[false,true].map(area=>({id:area?'idol-finyu-area':'idol-finyu',family:'idol-finyu',name:'アイドル フィニュ',mode:area?'範囲支援':'単体支援',minLevel:area?110:50,maxLevel:150,url:url('アイドル フィニュ'),condition:'飼い主に3種の支援が付与された場合。単体・範囲は切替式。Lv150・魔力165.6の実測を使用し、瞬間回復は含めません。',buffs:[
+  ...[false,true].map(area=>({id:area?'idol-finyu-area':'idol-finyu',family:'idol-finyu',name:'アイドル フィニュ',mode:area?'範囲支援':'単体支援',minLevel:area?110:50,maxLevel:150,url:url('アイドル フィニュ'),condition:'飼い主に3種の支援が付与された場合。単体・範囲は切替式。ペットへの追加Buffなしで計算します。瞬間回復は含めません。',buffs:[
    {id:area?12946:12941,name:(area?'エリア ':'')+'チアー ソング',level:50,duration:64,description:'MP・STを8秒ごとに回復',periodic:[{resources:['MP','ST'],points:[[150,area?31:44]],intervalSeconds:8}]},
    {id:area?12947:12942,name:(area?'エリア ':'')+'バトル ソング',level:75,description:'物理・魔法ダメージ上昇、攻撃・魔法ディレイ短縮',exact:{dmgPct:area?10:20},observations:[{fields:['extraAttackDelay','extraMagicDelay'],points:[[150,area?-10:-17]]}],durationPoints:[[150,60]],displayValues:[{name:'魔法ダメージ上昇',value:area?10:20,unit:'%'}]},
    {id:area?12949:12944,name:(area?'エリア ':'')+'ヒーロー ソング',level:110,description:'攻撃力・防御力・命中・回避・魔力・全耐性上昇',observations:[{fields:['extraAC',...enhance,...resist],points:[[150,area?30:42]]}],...(area?{durationPoints:[[150,96]]}:{})}
@@ -107,17 +108,20 @@
   const pet=catalogs.find(p=>p.id===id),level=pet?.levelIndependent?0:Number(rawLevel);
   if(!pet||(!pet.levelIndependent&&(rawLevel===''||rawLevel==null))||!Number.isFinite(level)||level<pet.minLevel||level>pet.maxLevel)throw Error('ペットのレベルを範囲内で入力してください');
   return pet.buffs.filter(b=>level>=b.level).map(b=>{
-   const fields={...b.fixed,...b.exact},values=[],pending=(b.pending||[]).map((p,i)=>({id:b.id+':pending:'+i,category:'未確認',...p})),estimatedFields=Object.keys(b.fixed||{}),kinds=new Set();
+   const calculated=petFormulas.calculate(id,b.id,level),covered=new Set(calculated?.replacedFields||[]);
+   const fields={...b.fixed,...b.exact,...calculated?.fields},values=[],pending=(b.pending||[]).filter(p=>!p.fields?.every(f=>covered.has(f))).map((p,i)=>({id:b.id+':pending:'+i,category:'未確認',...p})),estimatedFields=[...Object.keys(b.fixed||{}).filter(f=>!covered.has(f)),...(calculated?.estimatedFields||[])],kinds=new Set();
+   if(calculated)kinds.add('ペットのレベルから計算（変動の基準値）');
    if(Object.keys(b.fixed||{}).length)kinds.add('wiki実測の目安');
    if(Object.keys(b.exact||{}).length)kinds.add('固定効果');
-   for(const o of b.observations||[]){const sample=observed(o,level);
+   for(const source of b.observations||[]){const o={...source,fields:source.fields.filter(f=>!covered.has(f))};if(!o.fields.length)continue;const sample=observed(o,level);
     if(!sample){pending.push({id:b.id+':'+o.fields[0],name:o.fields.map(f=>labels[f]).join('・'),reason:'このレベルの実測値と確定式がありません',category:'参考値なし'});continue;}
     kinds.add(sample.kind);for(const field of o.fields){fields[field]=sample.value;estimatedFields.push(field);}
    }
    for(const [field,value]of Object.entries(fields))values.push({id:b.id+':'+field,name:labels[field],value,unit:/Pct$/.test(field)?'%':/RegenPerMinute/.test(field)?'/分':'',scope:'飼い主',estimated:estimatedFields.includes(field)});
    const applied=values.map(v=>v.id);
-   for(const [i,v]of (b.displayValues||[]).entries())values.push({id:b.id+':display:'+i,...v,scope:'表示のみ',estimated:false});
-   for(const [i,o]of [...(b.periodic||[]).map(o=>({...o,periodic:true})),...(b.displayObservations||[])].entries()){
+   for(const [i,v]of (b.displayValues||[]).entries())if(!(calculated?.magicDamageCalculated&&v.name==='魔法ダメージ上昇'))values.push({id:b.id+':display:'+i,...v,scope:'表示のみ',estimated:false});
+   values.push(...(calculated?.values||[]));
+   for(const [i,o]of [...(calculated?.periodicCalculated?[]:b.periodic||[]).map(o=>({...o,periodic:true})),...(b.displayObservations||[])].entries()){
     const sample=observed(o,level),name=o.name||(o.resources.join('・')+'周期回復量');
     if(!sample){pending.push({id:b.id+':observation:'+i,name,category:'参考値なし',reason:'このレベルの実測値と確定式がありません'});continue;}
     kinds.add(sample.kind);
@@ -125,6 +129,7 @@
    }
    let seconds=b.duration??pet.duration,timeEstimated=false;
    if(b.durationPoints){const sample=observation(b.durationPoints,level);seconds=sample?.value;timeEstimated=!!sample;}
+   if(Number.isFinite(calculated?.seconds)){seconds=calculated.seconds;timeEstimated=false;}
    if(!Number.isFinite(seconds))pending.push({id:b.id+':duration',name:b.name+'の持続時間',category:'時間未確認',reason:'このレベルの時間の実測値と入力換算が未確認'});
    const times=Number.isFinite(seconds)?[{definitionId:b.id,name:b.name,seconds,conditional:false,estimated:timeEstimated}]:[];
    return {name:pet.name+'：'+b.name,enabled:false,fixed:false,excluded:false,slot:true,...fields,
@@ -132,7 +137,7 @@
     catalogSource:'pet-owner-buff-v1',catalogRuleId:'pet:'+pet.id+':'+b.id,catalogInputs:{petId:pet.id,petLevel:level,petFamily:pet.family||pet.id},
     extraEffects:[{key:'custom',name:b.description,scope:'display',unit:'',note:''}],
     note:pet.mode+'・Buff付与時の効果／'+(pet.levelIndependent?'レベル非依存':'Lv'+level)+'／'+([...kinds].join('・')||'効果の説明と確認済みの時間を表示')+'。'+(timeEstimated?'持続時間はwiki実測の参考値。':'')+(pet.condition||'')+(pet.firstWins?'同じ競合グループは先に付いたBuffを優先。':'他のBuffとの重複可否は未確認。')+'魔力増減など追加補正なし。',
-    catalogNumeric:{version:1,key:'pet:'+pet.id+':'+b.id,values,pending,applied,estimatedFields,times,inputs:{petId:pet.id,petLevel:level}}
+    catalogNumeric:{version:1,key:'pet:'+pet.id+':'+b.id,values,pending,applied,estimatedFields,times,inputs:{petId:pet.id,petLevel:level,...(calculated?{petActor:calculated.source,quantityBasis:'client-base-seed10'}:{})}}
    };
   });
  }

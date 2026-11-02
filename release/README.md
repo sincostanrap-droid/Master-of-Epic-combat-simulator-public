@@ -1,6 +1,6 @@
 # 公開ファイルの管理
 
-`web-files.txt` の235ファイルだけをGitHub Pagesへ配信します。`web-hashes.json` のSHA-256と照合し、解析資料や登録構成は成果物に含めません。
+`web-files.txt` の237ファイルだけをGitHub Pagesへ配信します。`web-hashes.json` のSHA-256と照合し、解析資料や登録構成は成果物に含めません。
 
 ソースの掲載範囲は `github-files.txt` に限定します。既存ファイルとテストを保持し、元の解析用リポジトリの履歴は取り込みません。
 

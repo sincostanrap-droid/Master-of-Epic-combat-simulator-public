@@ -49,6 +49,7 @@ src/calc/damagePrediction.js
 src/calc/effectTiming.js
 src/calc/equipmentBuffNumerics.js
 src/calc/orderedStats.js
+src/calc/petBuffFormulas.js
 src/calc/samuraiHeartCombat.js
 src/calc/techniqueDamage.js
 src/calc/timedBuffCombat.js
@@ -158,6 +159,7 @@ src/data/generated/equipBuffRuleCandidates.generated.js
 src/data/generated/equipmentAdditions20261013.generated.js
 src/data/generated/equipmentCatalog.generated.js
 src/data/generated/masteries.generated.js
+src/data/generated/petBuffInputs.generated.js
 src/data/generated/skillBuffCompatibility.generated.js
 src/data/generated/weaponSpeciesTraits.generated.js
 src/data/generated/wikiEquipBuffEffects.generated.js

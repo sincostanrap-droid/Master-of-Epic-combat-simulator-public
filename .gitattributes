@@ -234,3 +234,5 @@
 /styles/combatTrial.css -text
 /styles/main.css -text
 /styles/settingsCompact.css -text
+/src/data/generated/petBuffInputs.generated.js -text
+/src/calc/petBuffFormulas.js -text

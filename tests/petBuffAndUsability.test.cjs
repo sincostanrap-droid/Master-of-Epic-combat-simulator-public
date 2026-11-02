@@ -41,9 +41,9 @@ async function finish(){
  assert.equal(rows.length,5);assert.equal(JSON.stringify(old),before);assert.ok(rows.slice(1).every(r=>!r.fixed&&!r.enabled&&r.slot&&!r.excluded));
  rows=pet.setControls(rows,'magia-bit','enabled',true);
  assert.equal(c.buffSlotCountForState({...base,composite:rows.slice(1)}).total,4);
- assert.equal(pet.build('magia-bit',120).find(r=>r.clientBuffDefinitionId==='9164').extraAttackDelay,-50);
- assert.ok(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').catalogNumeric.pending.length);
- assert.equal(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').flatAttack,undefined);
+ assert.equal(pet.build('magia-bit',120).find(r=>r.clientBuffDefinitionId==='9164').extraAttackDelay,-55.375);
+ assert.equal(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').catalogNumeric.pending.length,0);
+ assert.equal(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').flatAttack,15.908928871154785);
  const both=pet.setControls(pet.replace(rows,'crystal-ana',150),'crystal-ana','enabled',true),resolved=c.resolveAllBuffRowsForGroups({...base,composite:both}).state;
  assert.equal(resolved.composite.filter(r=>r.enabled&&pet.isPet(r)).length,4,'first pet keeps two shared groups');
  const reversed=c.resolveAllBuffRowsForGroups({...base,composite:[...pet.build('crystal-ana',150),...pet.build('magia-bit',90)].map(r=>({...r,enabled:true}))}).state;
