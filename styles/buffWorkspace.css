@@ -14,11 +14,22 @@
 .compactCompositeInfo { margin-top:6px; font-size:13px; }
 .compactCompositeInfo summary { cursor:pointer; color:#3d566e; width:max-content; padding:3px 0; }
 .reviewedBuffGameInfo { white-space:pre-line; font-size:13px; line-height:1.7; margin:10px 0; }
-#reviewedBuffCatalogOverlay .reviewedBuffCatalogCard { padding:13px 15px; text-align:left; }
-#reviewedBuffCatalogOverlay .reviewedBuffCatalogCardTitle { font-size:15px; line-height:1.5; }
-#reviewedBuffCatalogOverlay .reviewedBuffCatalogCardEffect { font-size:13px; line-height:1.6; margin-top:7px; }
-#reviewedBuffCatalogOverlay .reviewedBuffCatalogEffect { padding:12px; font-size:14px; line-height:1.8; background:#f0f6fc; color:#263342; border-radius:8px; }
+:is(#reviewedBuffCatalogOverlay, #petBuffCatalogOverlay) .reviewedBuffCatalogCard { padding:13px 15px; text-align:left; }
+:is(#reviewedBuffCatalogOverlay, #petBuffCatalogOverlay) .reviewedBuffCatalogCardTitle { font-size:15px; line-height:1.5; }
+:is(#reviewedBuffCatalogOverlay, #petBuffCatalogOverlay) .reviewedBuffCatalogCardEffect { font-size:13px; line-height:1.6; margin-top:7px; }
+:is(#reviewedBuffCatalogOverlay, #petBuffCatalogOverlay) .reviewedBuffCatalogEffect { padding:12px; font-size:14px; line-height:1.8; background:#f0f6fc; color:#263342; border-radius:8px; }
 @media (max-width:700px) { #compositeBuffTable tbody .compactCompositeMainRow .compactCompositeSummaryCell { min-width:240px; } }
 
 /* Keep numeric effects separate from registration limitations. */
 .reviewedBuffCatalogEffect, .reviewedBuffCatalogCardEffect { white-space:pre-line; }
+
+/* Pet support uses the same launcher, cards and detail layout as food/Buff. */
+#petBuffCatalogOverlay .reviewedBuffCatalogSearchBar { grid-template-columns:minmax(0,1fr) auto; }
+#petBuffCatalogOverlay .reviewedBuffCatalogSearchBar input { width:100%; min-width:0; box-sizing:border-box; }
+#petBuffCatalogOverlay .reviewedBuffCatalogControls { display:grid; gap:12px; margin:0 0 12px; }
+#petBuffCatalogOverlay .reviewedBuffCatalogControls label { display:flex; flex-direction:column; gap:6px; align-items:stretch; margin:0; }
+#petBuffCatalogOverlay .reviewedBuffCatalogControls label[hidden] { display:none; }
+#petBuffCatalogOverlay .reviewedBuffCatalogControls input { width:100%; box-sizing:border-box; }
+#petBuffCatalogOverlay .reviewedBuffCatalogPreview h4 { margin:0 0 4px; }
+#petBuffCatalogOverlay .petBuffEffect { margin-top:14px; }
+#petBuffCatalogOverlay .reviewedBuffCatalogActions { flex-wrap:wrap; }
