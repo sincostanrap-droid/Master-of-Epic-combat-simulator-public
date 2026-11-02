@@ -247,6 +247,7 @@ tests/attackDpsAllWeapons.test.cjs
 tests/attackDpsRestoreControls.test.cjs
 tests/buffStorageCommonFields.test.cjs
 tests/buffTrialStartup.test.cjs
+tests/catalogScriptLoading.test.cjs
 tests/combatBuffCatalogBridge.test.cjs
 tests/combatConditionInputs.test.cjs
 tests/combatLogDisplayPrecision.test.cjs
@@ -268,6 +269,7 @@ tests/publicUiPresentation.test.cjs
 tests/storageFixedExcludedPersistence.test.cjs
 tests/tsvEscapesPersistence.test.cjs
 tests/tsvNestedSeparators.test.cjs
+tests/uiRuntimeReview.test.cjs
 tools/benchmark-optimizer.cjs
 tools/build-pages.py
 tools/prepare-publication-manifest.py

@@ -14,6 +14,23 @@ const CATALOG_SCRIPT_URLS = [
 ];
 let catalogScriptsPromise = null;
 let equipmentBuffRuntimeScriptsPromise = null;
+// Catalogue and restored equipment share these scripts. An inserted tag is
+// not proof that its data has finished loading.
+const catalogScriptLoads = new Map();
+function loadCatalogScriptOnce(src) {
+  if (catalogScriptLoads.has(src)) return catalogScriptLoads.get(src);
+  const task = new Promise(resolve => {
+    const script = document.createElement("script");
+    script.src = src.includes("?") ? src : `${src}?v=${src === "src/data/generated/clientBuffEvidence.generated.js" ? "20261005-client-evidence" : src === "src/data/manual/buffRules.manual.js" ? "20261004-mana-overdrive" : "1.24.12-pet-20261003"}`;
+    script.async = false;
+    script.dataset.catalogSrc = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => { catalogScriptLoads.delete(src); script.remove(); resolve(false); };
+    document.head.appendChild(script);
+  });
+  catalogScriptLoads.set(src, task);
+  return task;
+}
 
 const EQUIPMENT_BUFF_RUNTIME_SCRIPT_URLS = [
   "src/data/generated/equipBuffRuleCandidates.generated.js",
@@ -31,31 +48,21 @@ function catalogGlobalsReady() {
 
 function loadCatalogScriptsOnce() {
   if (catalogScriptsPromise) return catalogScriptsPromise;
-  catalogScriptsPromise = Promise.all(CATALOG_SCRIPT_URLS.map(src => new Promise(resolve => {
-    if (document.querySelector(`script[data-catalog-src="${src}"]`)) return resolve();
-    const script = document.createElement("script");
-    script.src = src.includes("?") ? src : `${src}?v=${src === "src/data/generated/clientBuffEvidence.generated.js" ? "20261005-client-evidence" : src === "src/data/manual/buffRules.manual.js" ? "20261004-mana-overdrive" : "1.24.12-pet-20261003"}`;
-    script.async = false;
-    script.dataset.catalogSrc = src;
-    script.onload = () => resolve();
-    script.onerror = () => resolve();
-    document.head.appendChild(script);
-  }))).then(() => true).catch(() => false);
+  catalogScriptsPromise = Promise.all(CATALOG_SCRIPT_URLS.map(loadCatalogScriptOnce)).then(results => {
+    const ready = results.every(Boolean);
+    if (!ready) catalogScriptsPromise = null;
+    return ready;
+  });
   return catalogScriptsPromise;
 }
 
 function loadEquipmentBuffRuntimeScriptsOnce() {
   if (equipmentBuffRuntimeScriptsPromise) return equipmentBuffRuntimeScriptsPromise;
-  equipmentBuffRuntimeScriptsPromise = Promise.all(EQUIPMENT_BUFF_RUNTIME_SCRIPT_URLS.map(src => new Promise(resolve => {
-    if (document.querySelector(`script[data-catalog-src="${src}"]`)) return resolve();
-    const script = document.createElement("script");
-    script.src = `${src}?v=1.24.12`;
-    script.async = false;
-    script.dataset.catalogSrc = src;
-    script.onload = () => resolve();
-    script.onerror = () => resolve();
-    document.head.appendChild(script);
-  }))).then(() => true).catch(() => false);
+  equipmentBuffRuntimeScriptsPromise = Promise.all(EQUIPMENT_BUFF_RUNTIME_SCRIPT_URLS.map(loadCatalogScriptOnce)).then(results => {
+    const ready = results.every(Boolean);
+    if (!ready) equipmentBuffRuntimeScriptsPromise = null;
+    return ready;
+  });
   return equipmentBuffRuntimeScriptsPromise;
 }
 

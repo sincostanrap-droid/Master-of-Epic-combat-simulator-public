@@ -136,7 +136,10 @@ function createCatalogTab(panel) {
     if (typeof invalidateCatalogEffectFacets === "function") invalidateCatalogEffectFacets();
     catalogScriptsPromise = null;
     catalogResetPage();
-    loadCatalogScriptsOnce().then(() => setupCatalogFilterOptions(true));
+    loadCatalogScriptsOnce().then(ready => {
+      if (!ready) { showCatalogLoadFailure(); return; }
+      setupCatalogFilterOptions(true);
+    });
   };
 }
 
@@ -211,18 +214,24 @@ function setupCatalogFilterOptions(force=false) {
   renderCatalogResults();
 }
 
+function showCatalogLoadFailure() {
+  const summary = byId("catalogSummary");
+  if (summary) summary.textContent = "カタログを読み込めませんでした。通信を確認して「再読み込み」を押してください。";
+}
 function renderCatalogTab() {
   const panel = document.querySelector('[data-tab-panel="catalog"]');
   if (!panel) return;
-  if (!panel.dataset.catalogReady) {
+  const first = !panel.dataset.catalogReady;
+  if (first) {
     panel.dataset.catalogReady = "1";
     createCatalogTab(panel);
-    loadCatalogScriptsOnce().then(() => {
-      document.dispatchEvent(new CustomEvent("moe:catalog-ui-ready"));
-      setupCatalogFilterOptions(true);
-    });
-  } else {
-    document.dispatchEvent(new CustomEvent("moe:catalog-ui-ready"));
-    setupCatalogFilterOptions(false);
   }
+  if (panel.dataset.catalogLoading === "1") return;
+  panel.dataset.catalogLoading = "1";
+  loadCatalogScriptsOnce().then(ready => {
+    delete panel.dataset.catalogLoading;
+    if (!ready) { showCatalogLoadFailure(); return; }
+    document.dispatchEvent(new CustomEvent("moe:catalog-ui-ready"));
+    setupCatalogFilterOptions(first);
+  });
 }

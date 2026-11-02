@@ -161,7 +161,8 @@ async function setCatalogSearchMode(mode){
   const panel=document.querySelector('[data-tab-panel="catalog"]');panel.dataset.catalogMode=mode;
   for(const selector of ['.catalogWorkspaceFilters','.catalogWorkspaceSearch','.catalogWorkspaceSort'])panel.querySelector(selector).hidden=mode==='special';
   if(mode==='special'){
-    await loadCatalogScriptsOnce();byId('specialSlot').innerHTML=catalogSlotOptions(equipmentCatalogItems());
+    if (!await loadCatalogScriptsOnce()) { showCatalogLoadFailure(); return; }
+    byId('specialSlot').innerHTML=catalogSlotOptions(equipmentCatalogItems());
     if(byId('specialSlot').dataset.saved)byId('specialSlot').value=byId('specialSlot').dataset.saved;
     await setupCatalogSpecializationOptions();updateSpecializationOptimizationSupport();
   }

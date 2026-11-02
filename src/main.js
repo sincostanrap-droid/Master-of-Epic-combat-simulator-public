@@ -14845,7 +14845,7 @@ function updatePredictedAtkUI(m) {
 
   const magicPctText = m.pctStats.steps
     .filter(s => s.key === "magic")
-    .map(s => `${s.name}+${s.percent}%: ${s.before.toFixed(1)} → ${s.after.toFixed(1)}`)
+    .map(s => `${escapeHtml(s.name)}+${s.percent}%: ${s.before.toFixed(1)} → ${s.after.toFixed(1)}`)
     .join(" / ");
   const magicLines = [
     `基礎魔力: 精神力 ${m.spirit.toFixed(1)} × 種族魔力係数 ${m.magicCoeff.toFixed(1)} = ${m.baseMagicFromSpirit.toFixed(1)}`,
@@ -14931,7 +14931,7 @@ function updateTotalStatsSummary(m=null) {
   const el = byId("totalStatsSummary");
   if (!el) return;
   try {
-    const metrics = m || computeMetrics(expandSkillSimMasteryBuffState(state), collectInputs());
+    const metrics = m || computeMetrics(state, collectInputs());
     const d = skillSimDerived();
     const rows = showcaseTotalStats(d, metrics);
     const important = ["HP","MP","ST","最大重量","命中","回避","防御/AC","耐火属性","耐水属性","耐地属性","耐風属性","耐無属性","攻撃力","魔力","速度"];
@@ -14943,6 +14943,30 @@ function updateTotalStatsSummary(m=null) {
   } catch (e) {
     el.textContent = "総合ステータスを表示できませんでした。";
   }
+}
+
+function automaticAnalysisVisible() {
+  const panel = document.querySelector(".analysisDetails");
+  return !!panel && panel.open && !panel.closest?.("[data-tab-panel]")?.hidden;
+}
+function renderAutomaticAnalysis() {
+  if (!automaticAnalysisVisible()) return;
+  renderCompareResult();
+  renderActualDiff();
+  renderRaceTable();
+  renderValueTable();
+  if (byId("acTable") && !byId("acTable").innerHTML) renderACTable();
+}
+function setupAnalysisLazyRendering() {
+  const panel = document.querySelector(".analysisDetails");
+  if (!panel || panel.dataset.analysisLazyBound === "1") return;
+  panel.dataset.analysisLazyBound = "1";
+  const refresh = () => {
+    renderAutomaticAnalysis();
+    if (typeof renderAnalysisPanel === "function") renderAnalysisPanel();
+  };
+  panel.addEventListener("toggle", refresh);
+  document.addEventListener("moe:main-tab-activated", event => { if (event.detail?.id === "calc") refresh(); });
 }
 
 function calc() {
@@ -14962,7 +14986,7 @@ function calc() {
   // sync readonly and auto fields into inputs
   inputs.raceCoeff = byId("raceCoeff").value;
   inputs.techMultiplier = byId("techMultiplier").value;
-  const m = computeMetrics(expandSkillSimMasteryBuffState(state), inputs);
+  const m = computeMetrics(state, inputs);
 
   syncHeavyTechniqueLabel(m,inputs);
 
@@ -14984,13 +15008,13 @@ function calc() {
   renderAttackDpsTab(m);
 
   const pctStatLine = m.pctStats.steps.length
-    ? `<p>割合ステータスBuff: ${m.pctStats.steps.map(s => `${s.name}+${s.percent}% → ${labelOf(s.key)} ${s.after.toFixed(1)}`).join(" / ")}</p>`
+    ? `<p>割合ステータスBuff: ${m.pctStats.steps.map(s => `${escapeHtml(s.name)}+${s.percent}% → ${labelOf(s.key)} ${s.after.toFixed(1)}`).join(" / ")}</p>`
     : "";
   const convLine = m.conv.steps.length
-    ? `<p>ステータス変換: ${m.conv.steps.map(s => `${s.name}: (${labelOf(s.source)} ${s.base.toFixed(1)}${s.baseOffset ? ` + 参照補正 ${s.baseOffset.toFixed(1)}` : ""}) × ${s.rate}%${s.offset ? ` + 固定補正 ${s.offset.toFixed(1)}` : ""} = ${s.add.toFixed(1)}（上限外）`).join(" / ")}</p>`
+    ? `<p>ステータス変換: ${m.conv.steps.map(s => `${escapeHtml(s.name)}: (${labelOf(s.source)} ${s.base.toFixed(1)}${s.baseOffset ? ` + 参照補正 ${s.baseOffset.toFixed(1)}` : ""}) × ${s.rate}%${s.offset ? ` + 固定補正 ${s.offset.toFixed(1)}` : ""} = ${s.add.toFixed(1)}（上限外）`).join(" / ")}</p>`
     : "";
   const atkPctLine = m.pctAtkCalc.steps.length
-    ? `<p>攻撃力%Buff増分: ${m.pctAtkCalc.steps.map(s => `${s.name}+${s.percent}% = ${s.add.toFixed(1)}`).join(" / ")}</p>`
+    ? `<p>攻撃力%Buff増分: ${m.pctAtkCalc.steps.map(s => `${escapeHtml(s.name)}+${s.percent}% = ${s.add.toFixed(1)}`).join(" / ")}</p>`
     : "";
 
   const lines = [];
@@ -15043,10 +15067,7 @@ function calc() {
   byId("breakdown").innerHTML = lines.join("");
 
   localStorage.setItem("moeDamageSimShortShareUrlShowcase", JSON.stringify(collectConfig()));
-  renderCompareResult();
-  renderActualDiff();
-  renderRaceTable();
-  renderValueTable();
+  renderAutomaticAnalysis();
   renderTagLinkSummary();
 
   if (typeof updateBuffHeaderStats === "function") updateBuffHeaderStats(m);
@@ -15428,7 +15449,7 @@ function renderActualDiff() {
     return;
   }
   const inputs = collectInputs();
-  const m = computeMetrics(expandSkillSimMasteryBuffState(state), inputs);
+  const m = computeMetrics(state, inputs);
   if(m.damagePrediction.supported===false){byId("actualDiffResult").textContent='計算未対応の攻撃のため、ダメージ差分・倍率の逆算はできません。';return;}
   const lines = [];
   if (actualDamage) {
@@ -15599,11 +15620,17 @@ function bindCalcRefreshInput(el) {
   // Catalog and these controls already exist during application startup.
   // Combat trial controls use their own evaluator; searching and changing its
   // conditions must not run the build calculator or persist registered data.
-  if (!el || el.id === "targetPreset" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalog')) return;
+  if (!el || el.id === "targetPreset" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalogOverlay') || el.closest?.('#attackDpsRoot')) return;
   if (el.dataset.moeCalcRefreshBound === "1") return;
   el.dataset.moeCalcRefreshBound = "1";
-  el.addEventListener("input", calc);
-  el.addEventListener("change", calc);
+  let lastInputValue = null;
+  const value = () => el.type === "checkbox" || el.type === "radio" ? String(!!el.checked) : String(el.value);
+  el.addEventListener("input", () => { calc(); lastInputValue = value(); });
+  el.addEventListener("change", () => {
+    const duplicate = lastInputValue !== null && lastInputValue === value();
+    lastInputValue = null;
+    if (!duplicate) calc();
+  });
 }
 
 function initializeOptimizerUiOnce() {
@@ -15646,7 +15673,8 @@ function initializeEquipmentBuffRuntimeData() {
     (row.equipBuffName || row.equipBuffCatalogId || row.equipBuffTechnicId)
   );
   if (!hasEquipBuff || typeof loadEquipmentBuffRuntimeScriptsOnce !== "function") return;
-  loadEquipmentBuffRuntimeScriptsOnce().then(() => {
+  loadEquipmentBuffRuntimeScriptsOnce().then(ready => {
+    if (!ready) return;
     renderAll();
     calc();
     document.dispatchEvent(new CustomEvent("moe:equip-buff-runtime-ready"));
@@ -15657,6 +15685,7 @@ function initializeBrowserApp() {
   loadIdbWorkerEndpoint();
 
   setupTabLayout();
+  setupAnalysisLazyRendering();
   setupEquipmentFilterControls();
   setupOptimizerLazyInitialization();
 
@@ -15686,11 +15715,7 @@ function initializeBrowserApp() {
   loadNamedPresetsFromStorage();
   renderPresetSelect();
   renderSnapshotLabels();
-  renderCompareResult();
-  renderActualDiff();
-  renderACTable();
-  renderRaceTable();
-  renderValueTable();
+  renderAutomaticAnalysis();
   renderTagLinkSummary();
   Promise.resolve(loadConfigFromShareHash()).finally(() => {
     initializeEquipmentBuffRuntimeData();

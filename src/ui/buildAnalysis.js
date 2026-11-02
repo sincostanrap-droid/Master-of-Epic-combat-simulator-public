@@ -76,17 +76,17 @@ function refreshComparePresetSelect() {
 }
 function compareMetricRows(current, base) {
   const rows = [
-    ["ダメージ", current.rawDamage, base.rawDamage, ""],
+    ["ダメージ", current.finalDamage, base.finalDamage, "", 0],
     ["攻撃力", current.atk, base.atk, ""],
-    ["魔力", current.magic, base.magic, ""],
-    ["攻撃間隔", current.interval, base.interval, ""],
-    ["Buff枠", current.slots?.total, base.slots?.total, "枠"]
+    ["魔力", current.stats?.magic, base.stats?.magic, ""],
+    ["Buff枠", current.slots?.total, base.slots?.total, "枠", 0]
   ];
-  return rows.map(([label, cur, old, suffix]) => {
-    const c = +cur || 0, o = +old || 0, diff = c - o;
+  return rows.map(([label, cur, old, suffix, digits=1]) => {
+    const c = cur, o = old, valid = Number.isFinite(c) && Number.isFinite(o), diff = valid ? c - o : null;
     const cls = diff > 0 ? "plus" : diff < 0 ? "minus" : "";
     const sign = diff > 0 ? "+" : "";
-    return `<tr><th>${escapeHtml(label)}</th><td>${fmt(o,1)}${suffix}</td><td>${fmt(c,1)}${suffix}</td><td class="${cls}">${sign}${fmt(diff,1)}${suffix}</td></tr>`;
+    const value = v => Number.isFinite(v) ? fmt(v,digits)+suffix : "計算未対応";
+    return `<tr><th>${escapeHtml(label)}</th><td>${value(o)}</td><td>${value(c)}</td><td class="${cls}">${valid?sign+value(diff):"計算未対応"}</td></tr>`;
   }).join("");
 }
 function compareCurrentWithPreset() {
@@ -111,6 +111,7 @@ function compareCurrentWithPreset() {
   }
 }
 function renderAnalysisPanel() {
+  if (typeof automaticAnalysisVisible === "function" && !automaticAnalysisVisible()) return;
   refreshComparePresetSelect();
   renderBuildDiagnostics();
 }
