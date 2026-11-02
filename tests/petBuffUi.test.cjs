@@ -35,7 +35,7 @@ assert.equal(nodes.petBuffCatalogOpen.className,'buffCatalogPrimaryButton');asse
 const open=()=>nodes.petBuffCatalogOpen.onclick();
 const search=text=>{nodes.petBuffSearch.value=text;nodes.petBuffSearch.oninput();};
 const choose=id=>{const card=nodes.petBuffList.querySelectorAll('[data-pet-catalog-id]').find(el=>el.dataset.petCatalogId===id);assert.ok(card);card.onclick();return card;};
-open();assert.match(nodes.petBuffCatalogOverlay.innerHTML,/role="dialog"/);assert.equal(nodes.petBuffList.cards.length,8);
+open();assert.match(nodes.petBuffCatalogOverlay.innerHTML,/role="dialog"/);assert.equal(nodes.petBuffList.cards.length,26);
 assert.equal(p.document.activeElement,nodes.petBuffSearch);assert.match(nodes.petBuffPreview.innerHTML,/4枠/);
 assert.match(nodes.petBuffPreview.innerHTML,/参考値/);assert.match(nodes.petBuffPreview.innerHTML,/実測点/);
 nodes.petBuffLevel.value='90';nodes.petBuffLevel.oninput();assert.equal(calcs,0,'browsing does not calculate build');
@@ -44,7 +44,16 @@ search('該当なし');assert.equal(nodes.petBuffList.cards.length,0);assert.equ
 search('プロテクト');assert.equal(nodes.petBuffList.cards.length,1);assert.equal(calcs,0);
 nodes.petBuffRegister.onclick();assert.equal(calcs,1);assert.equal(renders,1);assert.equal(state.composite.length,5);assert.deepEqual(state.composite[0],retained);
 assert.equal(nodes.petBuffCatalogOverlay,undefined);assert.equal(p.document.activeElement,nodes.petBuffCatalogOpen);
-const row=p.makePetBuffTableRow(state.composite[1]);assert.ok(row.children.slice(0,4).every(td=>td.children[0].disabled));
+assert.ok(state.composite.slice(1).every(r=>!r.enabled&&!r.fixed));
+const row=p.makePetBuffTableRow(state.composite[1]);
+assert.ok(row.children[1].children[0].disabled);
+for(const i of [0,2,3])assert.ok(!row.children[i].children[0].disabled);
+for(const [i,prop] of [[0,'enabled'],[2,'fixed'],[3,'excluded']]){
+ const cb=row.children[i].children[0];cb.checked=true;cb.onchange();assert.ok(state.composite.slice(1).every(r=>r[prop]));
+}
+assert.ok(state.composite.slice(1).every(r=>!r.enabled));
+row.children[3].children[0].checked=false;row.children[3].children[0].onchange();
+row.children[2].children[0].checked=false;row.children[2].children[0].onchange();
 open();nodes.petBuffLevel.value='120';nodes.petBuffLevel.oninput();nodes.petBuffRegister.onclick();assert.equal(state.composite.length,5,'replace instead of duplicate');
 row.children.at(-1).children[0].onclick();assert.equal(state.composite.length,1);assert.deepEqual(state.composite[0],retained);
 open();nodes.petBuffLevel.value='';nodes.petBuffLevel.oninput();assert.equal(nodes.petBuffRegister.disabled,true);

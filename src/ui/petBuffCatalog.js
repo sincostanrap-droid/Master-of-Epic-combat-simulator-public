@@ -53,7 +53,7 @@ function renderPetBuffCatalogList(){
   const query=normalize(byId('petBuffSearch').value),api=globalThis.MOE_PET_BUFF_CATALOG;
   const pets=api.catalogs.filter(p=>normalize([p.name,p.mode,...p.buffs.flatMap(b=>[b.name,b.description])].join(' ')).includes(query));
   if(!pets.some(p=>p.id===petBuffCatalogSelectedId))petBuffCatalogSelectedId=pets[0]?.id||'';
-  byId('petBuffCount').textContent=pets.length+' / '+api.catalogs.length+'種';
+  byId('petBuffCount').textContent=pets.length+' / '+api.catalogs.length+'件（モード別）';
   const list=byId('petBuffList');
   list.innerHTML=pets.length?pets.map(p=>`<button type="button" class="reviewedBuffCatalogCard${p.id===petBuffCatalogSelectedId?' selected':''}" data-pet-catalog-id="${escapeAttr(p.id)}" aria-pressed="${p.id===petBuffCatalogSelectedId}">
     <span class="reviewedBuffCatalogCardTitle">${escapeHtml(p.name)}</span><span class="reviewedBuffCatalogCardMeta">${escapeHtml(p.mode)} · ${p.levelIndependent?'レベル非依存':'Lv'+p.buffs[0].level+'から'} · 最大${p.buffs.length}枠</span>
@@ -77,13 +77,18 @@ function renderPetBuffCatalogPreview(){
     const rows=api.build(pet.id,level.value);byId('petBuffRegister').disabled=!rows.length;
     preview.innerHTML='<h4>'+escapeHtml(pet.name)+'</h4><div class="small mutedText">'+escapeHtml(pet.mode)+'</div><div class="buffDurationBadge">使用Buff枠：'+rows.length+'枠（競合前）</div>'+
       '<p class="small">'+escapeHtml(pet.condition||(pet.levelIndependent?'レベルに依存しないサポート効果です。':'選んだモードのBuffが飼い主に付いている場合の効果です。'))+'</p>'+
-      rows.map(r=>'<section class="petBuffEffect"><b>'+escapeHtml(r.name.slice(pet.name.length+1))+'</b><div class="reviewedBuffCatalogEffect">'+(r.catalogNumeric.estimatedFields.length?'<span class="reviewedBuffCatalogBaseline">参考値を含む</span>':'')+escapeHtml(reviewedBuffCatalogEffectSummary(r))+'</div></section>').join('')+
-      '<p class="small">同じペットの再登録は更新になります。解除はペット単位です。</p><details class="compactCompositeInfo"><summary>参考値・重複について</summary><p class="small">参考値はwiki実測の目安です。実測点の間は直線補間し、範囲外は未計算とします。'+(pet.firstWins?'先に登録した競合Buffが優先されます。':'他のBuffとの重複可否は未確認です。')+'<a target="_blank" rel="noopener" href="'+escapeAttr(pet.url)+'">出典を見る</a></p></details>';
+      rows.map(r=>'<section class="petBuffEffect"><b>'+escapeHtml(r.name.slice(pet.name.length+1))+'</b><div class="reviewedBuffCatalogEffect">'+(r.catalogNumeric.values.some(v=>v.estimated)||r.catalogNumeric.times.some(t=>t.estimated)?'<span class="reviewedBuffCatalogBaseline">参考値を含む</span>':'')+escapeHtml(reviewedBuffCatalogEffectSummary(r))+'</div></section>').join('')+
+      '<p class="small">未使用・固定なしの候補として追加します。最適化で採用すると、このペットのBuffはすべて連動します。未使用の候補も探す設定で検索してください。同じペットの更新時は使用・固定・除外の指定を保持します。</p><details class="compactCompositeInfo"><summary>参考値・重複について</summary><p class="small">参考値はwiki実測の目安です。実測点の間は直線補間し、範囲外は未計算とします。'+(pet.firstWins?'先に登録した競合Buffが優先されます。':'他のBuffとの重複可否は未確認です。')+'<a target="_blank" rel="noopener" href="'+escapeAttr(pet.url)+'">出典を見る</a></p></details>';
   }catch(e){preview.textContent=e.message;}
 }
 function makePetBuffTableRow(row){
-  const tr=document.createElement('tr');tr.className='compactCompositeMainRow fixedRow';
-  for(const value of [true,true,true,false]){const td=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.checked=value;cb.disabled=true;cb.title='ペット単位で登録・解除します';td.appendChild(cb);tr.appendChild(td);}
+  const tr=document.createElement('tr');tr.className='compactCompositeMainRow'+(row.fixed?' fixedRow':'')+(row.excluded?' excludedRow':'');
+  for(const [prop,label] of [['enabled','使用'],['slot','枠使用'],['fixed','固定'],['excluded','除外']]){
+    const td=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.checked=prop==='slot'||!!row[prop];cb.disabled=prop==='slot';
+    cb.title=prop==='slot'?'採用時は付与されるBuffすべての枠を使います':'同じペットのBuffをまとめて'+label;cb.setAttribute('aria-label',row.name+'：'+label);
+    cb.onchange=()=>{state.composite=globalThis.MOE_PET_BUFF_CATALOG.setControls(state.composite,row.catalogInputs.petId,prop,cb.checked);renderCompositeTable();calc();};
+    td.appendChild(cb);tr.appendChild(td);
+  }
   const summary=document.createElement('td');summary.innerHTML='<b>'+escapeHtml(row.name)+'</b><div>'+escapeHtml(reviewedBuffCatalogEffectSummary(row))+'</div><div class="small">'+escapeHtml(row.note)+'</div>';tr.appendChild(summary);
   const source=document.createElement('td');source.textContent='ペット一括';tr.appendChild(source);
   const level=document.createElement('td');level.textContent=apiPetLevelLabel(row);tr.appendChild(level);

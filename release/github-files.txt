@@ -257,6 +257,7 @@ tests/equipmentPostStorage.test.cjs
 tests/finalStorageAudit.test.cjs
 tests/pagesPublicationBuild.test.py
 tests/petBuffAndUsability.test.cjs
+tests/petBuffLinkedOptimization.test.cjs
 tests/petBuffUi.test.cjs
 tests/publicCalculationWorkflow.test.cjs
 tests/publicReleaseUx.test.cjs

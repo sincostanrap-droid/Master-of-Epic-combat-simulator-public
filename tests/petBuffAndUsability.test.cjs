@@ -38,14 +38,15 @@ async function finish(){
  for(const [level,count]of [[30,1],[49.9,1],[50,2],[69.9,2],[70,3],[89.9,3],[90,4],[150,4]])assert.equal(pet.build('magia-bit',level).length,count);
  for(const level of ['',null,-1,151,NaN])assert.throws(()=>pet.build('magia-bit',level));
  let rows=pet.replace([old],'magia-bit',150);rows=pet.replace(rows,'magia-bit',90);
- assert.equal(rows.length,5);assert.equal(JSON.stringify(old),before);assert.ok(rows.slice(1).every(r=>r.fixed&&r.enabled&&r.slot&&!r.excluded));
+ assert.equal(rows.length,5);assert.equal(JSON.stringify(old),before);assert.ok(rows.slice(1).every(r=>!r.fixed&&!r.enabled&&r.slot&&!r.excluded));
+ rows=pet.setControls(rows,'magia-bit','enabled',true);
  assert.equal(c.buffSlotCountForState({...base,composite:rows.slice(1)}).total,4);
  assert.equal(pet.build('magia-bit',120).find(r=>r.clientBuffDefinitionId==='9164').extraAttackDelay,-50);
  assert.ok(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').catalogNumeric.pending.length);
  assert.equal(pet.build('magia-bit',70).find(r=>r.clientBuffDefinitionId==='9162').flatAttack,undefined);
- const both=pet.replace(rows,'crystal-ana',150),resolved=c.resolveAllBuffRowsForGroups({...base,composite:both}).state;
+ const both=pet.setControls(pet.replace(rows,'crystal-ana',150),'crystal-ana','enabled',true),resolved=c.resolveAllBuffRowsForGroups({...base,composite:both}).state;
  assert.equal(resolved.composite.filter(r=>r.enabled&&pet.isPet(r)).length,4,'first pet keeps two shared groups');
- const reversed=c.resolveAllBuffRowsForGroups({...base,composite:[...pet.build('crystal-ana',150),...pet.build('magia-bit',90)]}).state;
+ const reversed=c.resolveAllBuffRowsForGroups({...base,composite:[...pet.build('crystal-ana',150),...pet.build('magia-bit',90)].map(r=>({...r,enabled:true}))}).state;
  assert.equal(reversed.composite.filter(r=>r.enabled&&pet.isPet(r)).length,4);
  assert.ok(reversed.composite.slice(0,2).every(r=>r.enabled),'first applied wins, not largest quantity');
  const state={...base,composite:rows};c.collectConfig=()=>({state,inputs});
@@ -62,7 +63,7 @@ async function finish(){
  const optimized=worker.runOptimizerCore({state:petState,inputs,settings});
  assert.ok(optimized.results.length,'four slots accepted');
  const tooSmall=worker.runOptimizerCore({state:petState,inputs,settings:{...settings,maxSlots:3}}).results;
- assert.ok(tooSmall.every(r=>r.currentConfig&&r.baselineInvalid&&r.metrics.slots.total===4),'only the invalid four-slot comparison may remain; no partial pet candidate');
+ assert.ok(tooSmall.every(r=>r.compositeIdxs.length===0&&r.metrics.slots.total===0),'package does not fit: omit whole pet, never select one Buff');
  assert.equal(worker.computeMetrics(petState,inputs).finalDamage,c.computeMetrics(petState,inputs).finalDamage);
  const alpha=numeric.evaluate(boost,{...control,resistance:50,targetDefense:100,areaBuffChoice:11779},boostPage.skillNames);
  assert.ok(alpha.effects.every(e=>e.definitionId===11779),'combat trial selects only stage 5');

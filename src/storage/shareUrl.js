@@ -196,7 +196,8 @@ function collectShowcaseShareConfig() {
         .filter(r => (r.enabled !== false || r.optimizerFixed || r.optimizerExcluded) && equipmentCandidateHasData(r))
         .map(shareCompactEquipmentRow),
       composite: normalizeCompositeRows(st.composite)
-        .filter(r => r.fixed || r.excluded || (r.enabled && (compositeHasEffect(r) || r.extraEffects?.length || r.catalogNumeric?.version===1 || r.catalogRuleId)))
+        // Keep every member of a pet candidate, including currently OFF rows.
+        .filter(r => r.catalogSource==='pet-owner-buff-v1' || r.fixed || r.excluded || (r.enabled && (compositeHasEffect(r) || r.extraEffects?.length || r.catalogNumeric?.version===1 || r.catalogRuleId)))
         .map(shareCompactCompositeRow),
       post: (st.post || [])
         .filter(r => r.enabled || r.fixed || r.excluded)

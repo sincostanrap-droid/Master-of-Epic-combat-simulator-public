@@ -45,7 +45,7 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261102",
+  "../main.js?v=20261102-pet-packages",
   "../calc/core.js?v=20261027",
   "./core.js?v=20261027"
 );

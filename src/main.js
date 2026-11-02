@@ -8571,6 +8571,7 @@ function reviewedBuffCatalogEffectSummary(effect, rule=null) {
   if (+effect.extraAvoid) parts.push(`回避${effect.extraAvoid > 0 ? "+" : ""}${statDisplayNumber(+effect.extraAvoid,"extraAvoid")}`);
   if (+effect.flatSpeed) parts.push(`速度${effect.flatSpeed > 0 ? "+" : ""}${statDisplayNumber(+effect.flatSpeed,"flatSpeed")}`);
   if (+effect.extraAttackDelay) parts.push(`攻撃ディレイ${effect.extraAttackDelay > 0 ? "+" : ""}${statDisplayNumber(+effect.extraAttackDelay,"extraAttackDelay")}`);
+  if (+effect.extraMagicDelay) parts.push(`魔法ディレイ${effect.extraMagicDelay > 0 ? "+" : ""}${statDisplayNumber(+effect.extraMagicDelay,"extraMagicDelay")}`);
   if (+effect.extraAttackDelayPct) parts.push(`攻撃ディレイ${effect.extraAttackDelayPct > 0 ? "+" : ""}${statDisplayNumber(+effect.extraAttackDelayPct,"extraAttackDelayPct")}%`);
   if (+effect.extraCritRatePct) parts.push(`クリ率${effect.extraCritRatePct > 0 ? "+" : ""}${statDisplayNumber(+effect.extraCritRatePct,"extraCritRatePct")}%`);
   for(const [field,label]of [['extraMaxWeightPct','最大重量'],['extraHPPct','最大HP'],['extraMPPct','最大MP'],['extraSTPct','最大ST'],['extraHitPct','命中'],['extraAvoidPct','回避'],['extraFireResPct','火耐性'],['extraWaterResPct','水耐性'],['extraWindResPct','風耐性'],['extraEarthResPct','地耐性'],['extraNeutralResPct','無耐性']])if(+effect[field])parts.push(`${label}${effect[field]>0?'+':''}${fmt(effect[field],1)}%`);
@@ -11078,6 +11079,27 @@ function optimizerCompositeRows(settings) {
   return settings?._compositeRows || normalizeCompositeRows(state.composite);
 }
 
+// A pet supplies a package of Buffs. Keep its selection identity separate from
+// conflict tags: linked effects are all requested; actual conflicts resolve later.
+function optimizerCompositeUnits(settings) {
+  const rows=optimizerCompositeRows(settings);
+  if(settings?._compositeUnitsRows===rows)return settings._compositeUnits;
+  const groups=new Map(),units=[];
+  rows.forEach((row,idx)=>{
+    const key=row.catalogSource==='pet-owner-buff-v1'&&row.catalogInputs?.petId;
+    let unit=key&&groups.get(key);
+    if(!unit){unit={idx,indices:[],rows:[]};units.push(unit);if(key)groups.set(key,unit);}
+    unit.indices.push(idx);unit.rows.push(row);
+  });
+  if(settings){settings._compositeUnitsRows=rows;settings._compositeUnits=units;}
+  return units;
+}
+function optimizerLinkedCompositeIndices(indices,settings,representatives=false){
+  const selected=new Set(indices||[]);
+  return optimizerCompositeUnits(settings).filter(unit=>unit.indices.some(idx=>selected.has(idx)))
+    .flatMap(unit=>representatives?[unit.idx]:unit.indices);
+}
+
 const OPTIMIZER_EQUIPMENT_SLOT_ORDER = new Map(EQUIPMENT_SLOTS.map((x, i) => [x.slot, i]));
 
 function optimizerCanonicalEquipmentIdxs(equipmentIdxs, settings=null) {
@@ -11214,7 +11236,7 @@ function optimizerStateForSelection(equipmentIdxs, compositeIdxs, settings=null)
   const compositeRows = optimizerCompositeRows(settings);
   const canonicalEquipmentIdxs = optimizerCanonicalEquipmentIdxs(equipmentIdxs || [], settings);
   const selectedEquipment = new Set(canonicalEquipmentIdxs);
-  const selectedBuffs = new Set(compositeIdxs || []);
+  const selectedBuffs = new Set(optimizerLinkedCompositeIndices(compositeIdxs,settings));
 
   // JSON deep cloneを毎評価で行うと重いので、最適化中だけ浅いstateを作る。
   // computeMetrics側で必要な展開・正規化は行うため、ON/OFFだけ差し替えれば足りる。
@@ -11582,13 +11604,14 @@ function optimizerBuildEquipmentBeams(inputs, settings) {
 
 function optimizerCompositeCandidates(settings) {
   if (settings && settings._compositeCandidates) return settings._compositeCandidates;
-  const rows = optimizerCompositeRows(settings);
-  const candidates = rows
-    .map((row, idx) => ({row, idx}))
-    .filter(x => compositeHasEffect(x.row))
-    // 行単位で固定されたOFF状態は、最適化でもOFFのまま候補から外す。
-    .filter(x => !(x.row.fixed && !x.row.enabled))
-    .filter(x => settings.includeDisabledBuffs || x.row.enabled);
+  const candidates = optimizerCompositeUnits(settings)
+    .filter(unit=>unit.rows.some(compositeHasEffect))
+    // Exclusion/fixed-OFF of any member excludes the whole package.
+    .filter(unit=>!unit.rows.some(row=>row.excluded||(row.fixed&&!row.enabled)))
+    .filter(unit=>settings.includeDisabledBuffs||unit.rows.some(row=>row.enabled))
+    .map(unit=>({idx:unit.idx,indices:unit.indices,row:unit.rows.length===1?unit.rows[0]:{
+      ...unit.rows[0],enabled:unit.rows.some(row=>row.enabled),fixed:unit.rows.some(row=>row.fixed)
+    }}));
   if (settings) settings._compositeCandidates = candidates;
   return candidates;
 }
@@ -11635,6 +11658,8 @@ function optimizerEvaluateBuffSelection(equipmentIdxs, compositeIdxs, inputs, se
 }
 
 function optimizerPruneExternalBuffs(equipmentIdxs, selected, fixedSet, inputs, settings) {
+  selected=optimizerLinkedCompositeIndices(selected,settings,true);
+  if(fixedSet)fixedSet=new Set(optimizerLinkedCompositeIndices([...fixedSet],settings,true));
   let current = optimizerEvaluateBuffSelection(equipmentIdxs, selected, inputs, settings);
   let prunedCount = 0;
   let changed = true;
@@ -11668,7 +11693,7 @@ function optimizerPruneExternalBuffs(equipmentIdxs, selected, fixedSet, inputs, 
 }
 
 function optimizerCompleteGreedySelection(equipmentIdxs, inputs, settings, initialSelected, fixedSet=null) {
-  let selected = Array.from(new Set(initialSelected || []));
+  let selected = optimizerLinkedCompositeIndices(initialSelected,settings,true);
   const selectedSet = new Set(selected);
 
   let evaluated = optimizerEvaluateBuffSelection(equipmentIdxs, selected, inputs, settings);
@@ -11837,9 +11862,10 @@ function optimizerSelectExternalBuffsBeam(equipmentIdxs, inputs, settings) {
 }
 
 function optimizerSelectExternalBuffs(equipmentIdxs, inputs, settings) {
-  if (settings.buffMode === "fast") return optimizerSelectExternalBuffsGreedy(equipmentIdxs, inputs, settings);
-  if (settings.buffMode === "beam") return optimizerSelectExternalBuffsBeam(equipmentIdxs, inputs, settings);
-  return optimizerSelectExternalBuffsLocal(equipmentIdxs, inputs, settings);
+  const result=settings.buffMode === "fast" ? optimizerSelectExternalBuffsGreedy(equipmentIdxs, inputs, settings)
+    :settings.buffMode === "beam" ? optimizerSelectExternalBuffsBeam(equipmentIdxs, inputs, settings)
+    :optimizerSelectExternalBuffsLocal(equipmentIdxs, inputs, settings);
+  return {...result,compositeIdxs:optimizerLinkedCompositeIndices(result.compositeIdxs,settings)};
 }
 
 function optimizerEquipmentRowHasVisibleData(row) {
@@ -12042,7 +12068,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-gaps13-20261014`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-pet-packages-20261102`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -14592,7 +14618,7 @@ function clearAllEquipmentUsage() {
 }
 
 function clearAllBuffUsage() {
-  state.composite = normalizeCompositeRows(state.composite).map(row => ({...row, enabled:row.catalogSource==='pet-owner-buff-v1'}));
+  state.composite = normalizeCompositeRows(state.composite).map(row => ({...row, enabled:false}));
   ["pct", "flat", "conv", "dmg", "special", "post", "other"].forEach(key => {
     state[key] = Array.isArray(state[key]) ? state[key].map(row => ({...row, enabled:false})) : [];
   });
@@ -16674,11 +16700,12 @@ if (typeof document !== "undefined") {
 
     const contributions = [];
 
-    compositeIdxs.forEach(idx => {
+    optimizerLinkedCompositeIndices(compositeIdxs, settings, true).forEach(idx => {
       const row = compositeRows[idx];
       if (!row) return;
 
-      const trialBuffIdxs = compositeIdxs.filter(x => x !== idx);
+      const linked = new Set(optimizerLinkedCompositeIndices([idx], settings));
+      const trialBuffIdxs = compositeIdxs.filter(x => !linked.has(x));
       const evaluated = optimizerEvaluateBuffSelection(
         equipmentIdxs,
         trialBuffIdxs,
@@ -16695,14 +16722,14 @@ if (typeof document !== "undefined") {
       contributions.push({
         idx,
         row,
-        name: row.name || row.buffName || row.label || "名称未設定",
+        name: linked.size > 1 ? row.name.split('：')[0] + `（全${linked.size} Buff）` : row.name || row.buffName || row.label || "名称未設定",
         typeLabel: buffContributionTypeLabel(row),
         baseRaw,
         removedRaw,
         loss,
         ratio,
-        effects: buffContributionEffectParts(row),
-        conflicts: buffContributionConflictGroups(row),
+        effects: [...new Set([...linked].flatMap(i => buffContributionEffectParts(compositeRows[i])))],
+        conflicts: [...new Set([...linked].flatMap(i => buffContributionConflictGroups(compositeRows[i])))],
         invalidAfterRemoval:
           evaluated.score <= OPTIMIZER_INVALID_SCORE / 2 ||
           (evaluated.violations || []).length > 0
@@ -17056,13 +17083,14 @@ if (typeof document !== "undefined") {
     const equipmentIdxs = Array.isArray(top.equipmentIdxs) ? top.equipmentIdxs : [];
     const compositeIdxs = Array.from(new Set(top.compositeIdxs || [])).sort((a,b) => a-b);
 
-    const contributions = compositeIdxs.map(idx => {
-      const trial = compositeIdxs.filter(x => x !== idx);
+    const contributions = optimizerLinkedCompositeIndices(compositeIdxs, settings, true).map(idx => {
+      const linked = new Set(optimizerLinkedCompositeIndices([idx], settings));
+      const trial = compositeIdxs.filter(x => !linked.has(x));
       const evaluated = optimizerEvaluateBuffSelection(equipmentIdxs, trial, inputs, settings);
       const raw = optimizerObjectiveRawValue(evaluated.metrics, objective);
       return {
         idx,
-        row:rows[idx],
+        row:linked.size > 1 ? {...rows[idx], name:rows[idx].name.split('：')[0] + `（全${linked.size} Buff）`} : rows[idx],
         equipmentIdxs,
         trialCompositeIdxs:trial,
         loss:objectiveLoss(baseRaw, raw, objective),
