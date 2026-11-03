@@ -240,6 +240,18 @@ function calculateAttackDps({
     }else motionBudget={reachable:false,requiredReductionPct:null,removableReductionPct:Math.max(0,-equipBuffRaw-60)};
   }
 
+  // Required same-group B reduction at the current equipment A and ST.
+  // Search at the input precision using the same float32/integer stores.
+  let skillMotionBudget=null;
+  if (supported) {
+    const delayAtB = reduction => Math.trunc(f(f(f(reuseScaled*f((100-reduction)/100))*f((100+manualBonus)/100))*f((100+stBonus)/100)))*.016;
+    let low=0,high=999;
+    if (delayAtB(high/10)<=motionLockSec) {
+      while(low<high){const mid=Math.floor((low+high)/2);if(delayAtB(mid/10)<=motionLockSec)high=mid;else low=mid+1;}
+      skillMotionBudget={requiredReductionPct:low/10,additionalReductionPct:Math.max(0,low/10+attackDelayBuff)};
+    }
+  }
+
   const simSeconds = Math.max(1, +cfg.simSeconds || 30);
   const hitRate = Math.max(0, Math.min(1, (+(cfg.hitRateSource === "current" ? currentHitRatePct : cfg.hitRatePct) || 0) / 100));
   // 初撃の発生時刻は未測定。時間窓の値は定常周期による期待値。
@@ -259,7 +271,7 @@ function calculateAttackDps({
     cfg, weapon, motion, supported, damage, currentDamage, weaponDelay, currentWeaponDelay,
     equipBuffRaw, equipBuffCapped, delayAuto, attackDelayBuff, stBonus, manualBonus,
     delayMultiplier, unarmedBaseDelay, baseReuseDelay, shortenedDelay, delaySec, fps, damageFrame, damageFrameSec,
-    motionLockSec, periodSec, motionBudget, simSeconds, hitRate, hitCount, expectedTotalDamage,
+    motionLockSec, periodSec, motionBudget, skillMotionBudget, simSeconds, hitRate, hitCount, expectedTotalDamage,
     followupExpected,followupExpectedActivations,followupComplete,expectedDamagePerHit,
     continuousDps: periodSec > 0 ? expectedDamagePerHit * hitRate / periodSec : NaN,
     windowDps: simSeconds > 0 ? expectedTotalDamage / simSeconds : NaN,

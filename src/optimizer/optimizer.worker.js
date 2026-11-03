@@ -15,7 +15,7 @@ importScripts(
   "../calc/orderedStats.js?v=20261006-product-formulas",
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
-  "../domain/attackDpsState.js?v=20261102",
+  "../domain/attackDpsState.js?v=20261103-dps-motion-required",
   "../domain/catalogData.js?v=20261027",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",
@@ -45,7 +45,7 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261103-dps-optimizer",
+  "../main.js?v=20261103-dps-motion-required",
   "../calc/core.js?v=20261027",
   "./core.js?v=20261103-dps-optimizer"
 );

@@ -10637,6 +10637,7 @@ function integratedOptimizerSettings() {
     secondaryObjective: byId("optimizerSecondaryObjective")?.value || "",
     targetValueRaw: byId("optimizerTargetValue")?.value ?? "",
     targetOverRaw: byId("optimizerTargetOver")?.value ?? "",
+    requireMotionLimit: byId("optimizerRequireMotionLimit")?.checked !== false,
     requireAttackDelay60: !!byId("optimizerRequireAttackDelay60")?.checked,
     requireCritRate100: !!byId("optimizerRequireCritRate100")?.checked,
     requireAttackDelayB: !!byId("optimizerRequireAttackDelayB")?.checked,
@@ -10674,6 +10675,17 @@ function optimizerUsesAttackDps(settings) {
   return settings?.objective === "attackDps" || settings?.secondaryObjective === "attackDps";
 }
 
+function optimizerRequiresMotionLimit(settings) {
+  return optimizerUsesAttackDps(settings) && settings.requireMotionLimit !== false;
+}
+
+function optimizerMotionLimitMissing(metrics, settings) {
+  if (!optimizerRequiresMotionLimit(settings)) return 0;
+  const d=metrics.attackDps;
+  if (!d?.supported || !Number.isFinite(d.delaySec) || !Number.isFinite(d.motionLockSec)) return Infinity;
+  return Math.max(0, Math.round((d.delaySec-d.motionLockSec)/.016));
+}
+
 function optimizerAttackDpsConfig(raw) {
   return normalizeAttackDpsState({...raw, manualAttackBonus:true,
     damageSource:"current", hitRateSource:"current", weaponDelaySource:"currentWeapon",
@@ -10683,6 +10695,7 @@ function optimizerAttackDpsConfig(raw) {
 function optimizerPrepareAttackDps(settings, raw) {
   if (!optimizerUsesAttackDps(settings)) return;
   settings.attackDps = optimizerAttackDpsConfig(settings.attackDps || raw);
+  settings.requireMotionLimit = settings.requireMotionLimit !== false;
   // Continuous critical motion requires an actually guaranteed critical build.
   // Intermediate candidates retain the existing constraint-distance ranking.
   if (settings.attackDps.criticalCancel) settings.requireCritRate100 = true;
@@ -10960,6 +10973,12 @@ function optimizerAttackDelayBResultText(m, settings) {
 function optimizerRequiredConditionViolations(m, settings) {
   const violations = optimizerUsesAttackDps(settings) ? (m.attackDps?.optimizationReasons || ["DPSを計算できません"]).slice() : [];
   const eps = 0.000001;
+  if (optimizerMotionLimitMissing(m, settings)>0) {
+    const d=m.attackDps;
+    violations.push(d?.supported
+      ? `モーション上限未到達（現在${fmt(d.attacksPerMinute,1)}回/分、上限${fmt(60/d.motionLockSec,1)}回/分）`
+      : "モーション上限への到達を確認できません");
+  }
   if (settings?.requireAttackDelay60) {
     const value = +(m?.extraStats?.extraAttackDelay || 0);
     if (value > -60 + eps) violations.push(`攻撃ディレイ ${fmt(value,1)}（-60以下が必要）`);
@@ -11038,6 +11057,15 @@ function optimizerEvaluationFromMetrics(m, settings) {
     const missingDelay = settings.requireAttackDelay60 ? Math.max(0, (+m?.extraStats?.extraAttackDelay || 0) + 60) : 0;
     const missing = missingB + missingCrit + missingDelay;
     rank = [missing <= 0.000001 ? 1 : 0, -missing].concat(rank);
+  }
+  if (optimizerRequiresMotionLimit(settings)) {
+    const missingMotion=optimizerMotionLimitMissing(m,settings);
+    const missingCrit=settings.requireCritRate100 ? Math.max(0,100-(+m.extraStats.extraCritRatePct||0)) : 0;
+    const missingA=settings.requireAttackDelay60 ? Math.max(0,(+m.extraStats.extraAttackDelay||0)+60) : 0;
+    const missingB=settings.requireAttackDelayB ? Math.max(0,optimizerAttackDelayBRequirement(settings)-(optimizerAttackDelayBSelection(m,settings)?.percent||0)) : 0;
+    const missing=missingMotion+missingCrit+missingA+missingB;
+    // Keep incomplete states searchable. Final filtering enforces all gates.
+    rank=[missing<=.000001 ? 1 : 0,-missing].concat(rank);
   }
   if (settings?.skillPlusFilters?.some(filter => filter.skill)) {
     const distance = optimizerSkillFilterDistance(m, settings);
@@ -12129,7 +12157,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-dps-optimizer-20261103`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-dps-motion-required-20261103`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -12412,7 +12440,7 @@ function renderIntegratedOptimizerResults() {
   const skillHeading = resultSettings.skillPlusTargetSkill ? `${resultSettings.skillPlusTargetSkill}強化` : "スキル強化合計";
 
   if (!integratedOptimizerResults.length) {
-    el.innerHTML = `${diagnostics}<p class="small">条件内に収まる結果がありません。バフ枠上限、各ステータス上限、競合グループ、装備同士の競合、候補の使用状況を見直してください。</p>`;
+    el.innerHTML = `${diagnostics}<p class="small">条件内に収まる結果がありません。${showDps && optimizerRequiresMotionLimit(resultSettings) ? "モーション上限に届く通常短縮とスキル・アタック短縮の組み合わせが必要です。" : ""}バフ枠上限、各ステータス上限、競合グループ、装備同士の競合、候補の使用状況を見直してください。</p>`;
     return;
   }
 
@@ -12435,7 +12463,7 @@ function renderIntegratedOptimizerResults() {
       <td class="optimizerSourceCell">${escapeHtml(label)}${sourceNote}</td>
       ${showSkillPlus ? `<td class="num" title="${escapeHtml(globalThis.MOESkillPlusV21?.summary(m.skillPlusTotals || {}) || "")}">${fmt(m.skillPlusScore || 0,1)}</td>` : ""}
       ${showDps ? `<td class="num">${m.attackDps?.optimizationSupported && !r.baselineInvalid ? fmt(m.attackDps.continuousDps,1) : "条件未達"}</td>
-      <td class="num">${m.attackDps?.supported ? `${fmt(m.attackDps.periodSec,1)}秒 / ${fmt(m.attackDps.attacksPerMinute,1)}回/分${m.attackDps.delaySec <= m.attackDps.motionLockSec ? "（モーション上限）" : ""}` : "未対応"}</td>` : ""}
+      <td class="num">${m.attackDps?.supported ? `${fmt(m.attackDps.periodSec,1)}秒 / ${fmt(m.attackDps.attacksPerMinute,1)}回/分${m.attackDps.delaySec <= m.attackDps.motionLockSec ? "（上限到達）" : "（上限未到達）"}` : "未対応"}</td>` : ""}
       <td class="num">${damageValueText(m)}</td>
       <td class="num">${fmt(m.atk,1)}</td>
       <td class="num">${fmt(m.stats.magic,1)}</td>
@@ -15666,7 +15694,7 @@ function ensureOptimizerCoreLoaded() {
 
   optimizerCoreLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "./src/optimizer/core.js?v=20261103-dps-optimizer";
+    script.src = "./src/optimizer/core.js?v=20261103-dps-motion-required";
     script.dataset.optimizerCore = "1";
     script.onload = () => {
       if (typeof runOptimizerCore === "function") resolve();

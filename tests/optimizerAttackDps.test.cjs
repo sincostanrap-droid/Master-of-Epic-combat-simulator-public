@@ -53,12 +53,25 @@ for(const worker of [false,true]){
   p=fixture(c);p.state.composite[0].extraCritRatePct=99;
   assert.equal(run(p).results.length,0,'99% is not guaranteed critical spam');
   p=fixture(c);p.state.composite[2].fixed=true;
+  assert.equal(run(p).results.length,0,'motion limit is mandatory by default; missing B cannot pass');
+  p.settings.requireMotionLimit=false;
   const noB=run(p).results[0];
   assert.equal(noB.metrics.attackDps.attackDelayBuff,0,'fixed OFF remains off');
   assert.equal(noB.metrics.attackDps.periodSec,.8);
+  assert.equal(noB.metrics.attackDps.skillMotionBudget.requiredReductionPct,2.5);
+  p=fixture(c);p.settings.maxSlots=3;p.state.composite[4].flatAttack=100;
+  assert.deepEqual(json(run(p).results[0].compositeIdxs),[0,1,2],'required wall wins over a stronger but slower damage Buff');
+  p.settings.requireMotionLimit=false;
+  assert.deepEqual(json(run(p).results[0].compositeIdxs),[0,1,4],'explicit OFF maximizes DPS without a motion constraint');
+  p=fixture(c);p.state.composite[2].fixed=true;p.settings.includeCurrentConfig=true;
+  const baseline=run(p).results.find(r=>r.currentConfig);
+  assert.equal(baseline.baselineInvalid,true);
+  assert.ok(baseline.baselineReasons.some(s=>s.includes('モーション上限未到達')),'unmet current build is a labeled reference, not a valid winner');
   p=fixture(c);p.state.attackDps.stDelayBonus=0;
   assert.equal(run(p).results[0].metrics.attackDps.periodSec,.768,'13% still enough at ST100');
   p.state.composite[2].extraEffects[0].value=12.1;
+  assert.equal(run(p).results.length,0,'below the wall rejected before result display');
+  p.settings.requireMotionLimit=false;
   assert.equal(run(p).results[0].metrics.attackDps.periodSec,.784,'below the integerization boundary');
   p.state.composite[2].extraEffects[0].value=12.2;
   assert.equal(run(p).results[0].metrics.attackDps.periodSec,.768,'at the integerization boundary');
@@ -85,7 +98,7 @@ for(const worker of [false,true]){
     extraEffects:[{key:'attackDelayB',name:'弓',value:1,unit:'%',scope:'display'}]});
   const conflict=run(p).results[0];assert.ok(conflict.metrics.attackDps.attackDelayBuff>=-13);
   // Adding maximum ST does not invent current-ST recovery or the ST200 bonus.
-  p=fixture(c);p.state.attackDps.stDelayBonus=0;p.state.composite[2].fixed=true;
+  p=fixture(c);p.state.attackDps.stDelayBonus=0;p.state.composite[2].fixed=true;p.settings.requireMotionLimit=false;
   p.state.composite.push({name:'maximum ST only',enabled:true,fixed:true,extraST:50});
   assert.equal(run(p).results[0].metrics.attackDps.stBonus,0);
   if(!worker){
@@ -97,7 +110,7 @@ for(const worker of [false,true]){
     c.optimizerApproximationDiagnosticsHtml=()=>'';
     c.renderIntegratedOptimizerResults();
     assert.match(nodes.get('optimizerResults').innerHTML,/<th>DPS<\/th>/);
-    assert.match(nodes.get('optimizerResults').innerHTML,/モーション上限/);
+    assert.match(nodes.get('optimizerResults').innerHTML,/上限到達/);
     assert.match(nodes.get('optimizerResults').innerHTML,/26\.9/);
     c.renderAll=()=>{};c.calc=()=>{};
     c.applyIntegratedOptimizerResult(0);

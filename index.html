@@ -1499,7 +1499,7 @@ MoE固有の主な仮定:
         </label>
 
 </div>
-<p class="small">DPS最適化は「アタックDPS α」で選んだ武器モーション・変身・ST補正を使用します。手動アタックを前提に、ダメージ・命中率・武器ディレイ・2種類の短縮は候補構成から計算します。クリティカル連続使用ではクリ率上昇量100%以上が必須です。通常アタックはクリティカルなしで比較します。混在する連打は対象外です。同じスキル内で形状の違う近接武器を比較するときは、武器モーションを指定し直してください。モーション上限に届けば、追加短縮でDPSは上がりません。短縮量も自動で選びたい場合は、短縮量の必須条件をOFFにしてください。</p>
+<p class="small">DPS最適化は「アタックDPS α」で選んだ武器モーション・変身・ST補正を使用します。手動アタックを前提に、ダメージ・命中率・武器ディレイ・2種類の短縮は候補構成から計算します。クリティカル連続使用ではクリ率上昇量100%以上が必須です。通常アタックはクリティカルなしで比較します。混在する連打は対象外です。同じスキル内で形状の違う近接武器を比較するときは、武器モーションを指定し直してください。DPS最適化では、初期設定でモーション上限への到達を必須にします。最大DPSだけで選ぶ場合は「モーション上限に到達する構成のみ」をOFFにしてください。モーション上限に届けば、追加短縮でDPSは上がりません。短縮量も自動で選びたい場合は、短縮量の必須条件をOFFにしてください。</p>
 <button type="button" onclick="activateMainTab('attackDps')">DPSのモーション・ST条件を設定</button>
 <p class="small" id="optimizerSkillPlusHint" hidden>選んだスキルの強化合計を比較します。実際のスキル値・成功率・装備要件は変わりません。</p>
 </section>
@@ -1513,6 +1513,7 @@ MoE固有の主な仮定:
 <label>バフ枠上限<input id="optimizerMaxSlots" type="number" min="0" step="1" value="24"></label>
 </div>
 <div class="optimizerChecks"><label title="装備・装備Buff・Buffの攻撃ディレイ短縮合計が-60以下になる構成だけを結果に残し、達成後は選択した目的を優先します。同じ評価なら-60からの超過が少ない構成を優先します。"><input id="optimizerRequireAttackDelay60" type="checkbox"> 攻撃ディレイ-60を確保する</label></div><div class="optimizerChecks"><label title="競合解決後の装備・Buffによるクリ率上昇量が100%以上の構成を探します。素のクリ率は含みません。ON時はクリ率の上限・目標超過許容による除外を行いません。"><input id="optimizerRequireCritRate100" type="checkbox"> クリティカル率上昇量100%以上を確保する</label></div><div class="optimizerDelayBRequirement">
+<label><input id="optimizerRequireMotionLimit" type="checkbox" checked> モーション上限に到達する構成のみ（DPS最適化）</label>
 <label><input id="optimizerRequireAttackDelayB" type="checkbox"> スキル短縮・アタック短縮を確保</label>
 <label><input id="optimizerAttackDelayBMinimumPct" type="number" min="1" max="99" step="1" value="20" aria-label="スキル短縮・アタック短縮の最低率"> %以上</label>
 <span class="small">レモンかき氷などの食べ物はBuffカタログから追加できます。</span>
@@ -1662,9 +1663,9 @@ MoE固有の主な仮定:
   <textarea id="configBox" placeholder="JSONまたはTSVをここに貼り付けて読み込み可能"></textarea>
 </section>
 
-<script src="./src/domain/attackDpsState.js?v=20261102" defer></script>
+<script src="./src/domain/attackDpsState.js?v=20261103-dps-motion-required" defer></script>
 <script src="./src/domain/targetPresets.js?v=20261007-virtual" defer></script>
-<script src="./src/ui/attackDpsResult.js?v=20261102" defer></script>
+<script src="./src/ui/attackDpsResult.js?v=20261103-dps-motion-required" defer></script>
 <script src="./src/ui/attackDpsControls.js?v=20261027" defer></script>
 <script src="./src/ui/appVersionBadge.js?v=20261018-public-ux" defer></script>
 <script src="./src/ui/mainTabs.js?v=20261018-release-ux" defer></script>
@@ -1741,7 +1742,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/petBuffFormulas.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/domain/petBuffCatalog.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/ui/petBuffCatalog.js?v=20261102-pet-formulas" defer></script>
-<script src="./src/main.js?v=20261103-dps-optimizer" defer></script>
+<script src="./src/main.js?v=20261103-dps-motion-required" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>

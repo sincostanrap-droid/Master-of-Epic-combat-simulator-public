@@ -51,6 +51,10 @@ function renderAttackDpsResult(metrics=null) {
       attackDpsResultCard("モーション上限に必要な装備・Buff短縮", fmt(r.motionBudget.requiredReductionPct,1)+'%', 'スキル短縮・ST・手動アタック補正は現在の条件で固定'),
       attackDpsResultCard(r.motionBudget.additionalReductionPct>0?'上限まで追加できる短縮':'減らしても攻撃周期が変わらない短縮',fmt(r.motionBudget.additionalReductionPct||r.motionBudget.removableReductionPct,1)+'ポイント','装備・Buffのディレイ補正のみ。補正の種類を変える場合は再計算してください')
     ]:[attackDpsResultCard('モーション上限までの短縮','装備・Buff短縮だけでは届きません','現在の武器・スキル短縮・ST条件で計算')]),
+    ...(r.delaySec>r.motionLockSec && r.skillMotionBudget ? [
+      attackDpsResultCard("上限までに必要なスキル・アタック短縮", `あと${fmt(r.skillMotionBudget.additionalReductionPct,1)}ポイント`,
+        `合計${fmt(r.skillMotionBudget.requiredReductionPct,1)}%以上。通常短縮・STは現在の条件。対応するBuffの確保が必要です。`)
+    ] : []),
     attackDpsResultCard("理論アタック周期", fmt(r.periodSec, 1) + " 秒", r.cfg.criticalCancel ? "クリティカル連続使用" : "通常アタック"),
     attackDpsResultCard(`継続DPS${r.followupComplete?'':'（対応分）'}`, fmt(r.continuousDps, 1), `命中率 ${fmt(r.hitRate * 100, 1)}%`),
     attackDpsResultCard(`${fmt(r.simSeconds, 1)}秒の期待総ダメージ`, fmt(r.expectedTotalDamage, 0), `${fmt(r.hitCount, 1)}回相当 / 定常周期換算`),
@@ -59,7 +63,7 @@ function renderAttackDpsResult(metrics=null) {
 
   el.innerHTML = `
     ${warnHtml}
-    <div class="attackDpsOk">${r.delaySec <= r.motionLockSec ? `モーション上限に到達（約${fmt(r.attacksPerMinute, 1)}回／分）。追加のディレイ短縮によるDPS上昇なし。` : `現在はディレイが攻撃周期を制限しています。モーション上限は約${fmt(60 / r.motionLockSec, 1)}回／分です。`}</div>
+    <div class="${r.delaySec <= r.motionLockSec ? "attackDpsOk" : "attackDpsWarnings"}">${r.delaySec <= r.motionLockSec ? `モーション上限に到達（約${fmt(r.attacksPerMinute, 1)}回／分）。追加のディレイ短縮によるDPS上昇なし。` : `モーション上限：未到達。現在${fmt(r.attacksPerMinute,1)}回／分、上限${fmt(60 / r.motionLockSec,1)}回／分。再使用待ちが${fmt((r.delaySec-r.motionLockSec)*1000,1)}ms長いためです。`}</div>
     <div class="attackDpsResultGrid">${cards}</div>
     <details class="attackDpsFormula">
       <summary>計算内訳</summary>
