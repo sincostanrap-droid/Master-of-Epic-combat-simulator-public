@@ -45,9 +45,9 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261102-pet-packages",
+  "../main.js?v=20261103-dps-optimizer",
   "../calc/core.js?v=20261027",
-  "./core.js?v=20261027"
+  "./core.js?v=20261103-dps-optimizer"
 );
 
 self.onmessage = event => {

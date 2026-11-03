@@ -1477,6 +1477,7 @@ MoE固有の主な仮定:
 <label>最適化の目的
           <select id="optimizerObjective">
             <option value="damage">最大ダメージ</option>
+            <option value="attackDps">最大アタックDPS</option>
             <option value="attack">最大攻撃力</option>
             <option value="magic">最大魔力</option>
             <option value="slotsMin">枠数最小</option>
@@ -1498,6 +1499,8 @@ MoE固有の主な仮定:
         </label>
 
 </div>
+<p class="small">DPS最適化は「アタックDPS α」で選んだ武器モーション・変身・ST補正を使用します。手動アタックを前提に、ダメージ・命中率・武器ディレイ・2種類の短縮は候補構成から計算します。クリティカル連続使用ではクリ率上昇量100%以上が必須です。通常アタックはクリティカルなしで比較します。混在する連打は対象外です。同じスキル内で形状の違う近接武器を比較するときは、武器モーションを指定し直してください。モーション上限に届けば、追加短縮でDPSは上がりません。短縮量も自動で選びたい場合は、短縮量の必須条件をOFFにしてください。</p>
+<button type="button" onclick="activateMainTab('attackDps')">DPSのモーション・ST条件を設定</button>
 <p class="small" id="optimizerSkillPlusHint" hidden>選んだスキルの強化合計を比較します。実際のスキル値・成功率・装備要件は変わりません。</p>
 </section>
 <section class="optimizerSetupPanel optimizerFixedGuide" aria-labelledby="optimizerFixedHeading">
@@ -1551,6 +1554,7 @@ MoE固有の主な仮定:
           <select id="optimizerSecondaryObjective">
             <option value="">なし</option>
             <option value="damage">最大ダメージ</option>
+            <option value="attackDps">最大アタックDPS</option>
             <option value="attack">最大攻撃力</option>
             <option value="magic">最大魔力</option>
             <option value="slotsMin">枠数最小</option>
@@ -1737,7 +1741,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/petBuffFormulas.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/domain/petBuffCatalog.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/ui/petBuffCatalog.js?v=20261102-pet-formulas" defer></script>
-<script src="./src/main.js?v=20261102-selection-fix" defer></script>
+<script src="./src/main.js?v=20261103-dps-optimizer" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>

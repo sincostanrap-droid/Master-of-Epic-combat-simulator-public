@@ -249,6 +249,7 @@ function optimizerDiagnosticFmtInt(n) {
 function optimizerDiagnosticMetricValue(result, settings) {
   const m = result?.metrics || {};
   const objective = settings?.objective || "damage";
+  if (objective === "attackDps") return m.attackDps?.continuousDps ?? OPTIMIZER_INVALID_SCORE;
   if (objective === "damage") return Number(m.rawDamage ?? m.damage ?? m.finalDamage ?? result?.score ?? 0);
   if (objective === "atk") return Number(m.atk ?? result?.score ?? 0);
   if (objective === "magic") return Number(m.magic ?? result?.score ?? 0);
@@ -436,6 +437,9 @@ function runOptimizerCore(payload, onProgress=null) {
   if (((settings.objective||"damage")==="damage"||settings.secondaryObjective==="damage") &&
       globalThis.MOE_TECHNIQUE_DAMAGE?.get(inputs.attackType)?.calculationSupported === false)
     throw new Error("選択した攻撃は計算未対応のため、ダメージ最適化は実行できません。");
+  optimizerPrepareAttackDps(settings, payload?.state?.attackDps);
+  if (optimizerUsesAttackDps(settings) && inputs.attackType && inputs.attackType !== "attack")
+    throw new Error("DPS最適化はアタック専用です。基本設定の攻撃種別をアタックにしてください。");
   state = clone(payload?.state || DEFAULT_STATE());
 
   state.equipment = normalizeEquipmentRows(state.equipment);

@@ -10610,7 +10610,7 @@ let optimizerLastPayload = null;
 // Calculation-tab objectives are opt-in. Do not expose every display field as
 // an optimization metric before its evaluation and import path are supported.
 const OPTIMIZER_UI_OBJECTIVE_KEYS = Object.freeze([
-  "damage", "attack", "magic", "speed", "slotsMin",
+  "damage", "attackDps", "attack", "magic", "speed", "slotsMin",
   "extraAC", "extraHP", "extraMP", "extraST", "extraMaxWeight",
   "extraAvoid", "extraAttackDelay", "extraMagicDelay",
   "extraFireRes", "extraWaterRes", "extraEarthRes", "extraWindRes", "extraNeutralRes",
@@ -10630,6 +10630,7 @@ function integratedOptimizerSettings() {
     buffBeamWidth: Math.max(20, parseInt(byId("optimizerBuffBeamWidth")?.value, 10) || 120),
     localPasses: Math.max(1, parseInt(byId("optimizerLocalPasses")?.value, 10) || 8),
     objective: byId("optimizerObjective")?.value || "damage",
+    attackDps: optimizerAttackDpsConfig(state.attackDps),
     skillPlusTargetSkill: byId("optimizerSkillPlusTargetSkill")?.value || "",
     skillPlusFilters: globalThis.MOESkillPlusV21?.readFilterRows("optimizerSkillPlusFilter", 4) || [],
     mainWeaponSkill: optimizerResolvedMainWeaponSkill(byId("optimizerMainWeaponSkill")?.value || ""),
@@ -10665,7 +10666,56 @@ function integratedOptimizerSettings() {
     if (settings.buffMode === "fast") settings.buffMode = "local";
   }
 
+  optimizerPrepareAttackDps(settings, state.attackDps);
   return settings;
+}
+
+function optimizerUsesAttackDps(settings) {
+  return settings?.objective === "attackDps" || settings?.secondaryObjective === "attackDps";
+}
+
+function optimizerAttackDpsConfig(raw) {
+  return normalizeAttackDpsState({...raw, manualAttackBonus:true,
+    damageSource:"current", hitRateSource:"current", weaponDelaySource:"currentWeapon",
+    equipmentBuffDelaySource:"auto", attackDelayBuff:0});
+}
+
+function optimizerPrepareAttackDps(settings, raw) {
+  if (!optimizerUsesAttackDps(settings)) return;
+  settings.attackDps = optimizerAttackDpsConfig(settings.attackDps || raw);
+  // Continuous critical motion requires an actually guaranteed critical build.
+  // Intermediate candidates retain the existing constraint-distance ranking.
+  if (settings.attackDps.criticalCancel) settings.requireCritRate100 = true;
+}
+
+function optimizerAttachAttackDps(metrics, settings, capture) {
+  const cfg = optimizerAttackDpsConfig(settings.attackDps);
+  const delayAuto = collectAttackDpsDelaySourcesPrepared(capture.normalizedEquipment, capture.resolvedBuffState);
+  // Required secondary skills do not make a weapon use two attack skills.
+  delayAuto.masteryDelaySources = delayAuto.masteryDelaySources.filter(source =>
+    source.skill === "全武器" || source.skill === metrics.equippedWeaponSkill);
+  const r = calculateAttackDps({cfg, weapon:metrics.selectedWeapon,
+    currentDamage:Math.floor(metrics.finalDamage), currentHitRatePct:metrics.hitRatePct,
+    currentFollowups:metrics.attackFollowups,
+    currentWeaponDelay:Math.max(0, metrics.effectiveWeapon.attackInterval), delayAuto});
+  const reasons=[];
+  if (!r.supported) reasons.push("武器の種類・モーション・武器ディレイを確認してください");
+  if (!Number.isFinite(metrics.finalDamage) || metrics.damagePrediction?.supported === false
+      || metrics.unsupportedBuffs?.length) reasons.push("効果量を計算できない攻撃・Buffがあります");
+  if (!Number.isFinite(metrics.hitRatePct)) reasons.push("命中率を計算できません");
+  if (!r.followupComplete) reasons.push("周期や上書きを計算できない追撃があります");
+  if (delayAuto.pctSources.length) reasons.push("種類を確認できない攻撃ディレイ%があります");
+  const category = attackDpsCategory(cfg, metrics.selectedWeapon);
+  const expectedSkill = ({1:"素手",2:"こんぼう",3:"こんぼう",4:"こんぼう",5:"刀剣",6:"刀剣",
+    7:"槍",8:"刀剣",9:"刀剣",10:"刀剣",12:"弓",13:"銃器",18:"槍",19:"銃器"})[category];
+  if (expectedSkill && metrics.equippedWeaponSkill && expectedSkill !== metrics.equippedWeaponSkill)
+    reasons.push("選んだ武器モーションの種類と武器スキルが一致しません");
+  if ([13,19].includes(category) && metrics.selectedWeapon
+      && (metrics.selectedWeapon.weaponTwoHanded === "○") !== (category === 13))
+    reasons.push("銃の片手・両手と武器モーションが一致しません");
+  r.optimizationReasons = reasons;
+  r.optimizationSupported = reasons.length === 0;
+  metrics.attackDps = r;
 }
 
 const OPTIMIZER_MINIMIZE_OBJECTIVES = Object.freeze(new Set([
@@ -10715,6 +10765,7 @@ function optimizerSkillFilterDistance(metrics, settings) {
 }
 
 function optimizerObjectiveRawValue(m, objective) {
+  if (objective === "attackDps") return m.attackDps?.optimizationSupported ? m.attackDps.continuousDps : OPTIMIZER_INVALID_SCORE;
   if (objective === "skillPlus") return +(m.skillPlusScore || 0);
   if (objective === "attack") return m.atk;
   if (objective === "magic") return m.stats.magic;
@@ -10749,6 +10800,7 @@ function optimizerAttackDelay60Excess(m) {
 function optimizerObjectiveLabel(objective) {
   const base = ({
     damage:"ダメージ",
+    attackDps:"アタックDPS",
     attack:"攻撃力",
     magic:"魔力",
     speed:"移動速度",
@@ -10898,15 +10950,15 @@ function optimizerAttackDelayBSelection(m, settings) {
 }
 
 function optimizerAttackDelayBResultText(m, settings) {
-  if (!settings?.requireAttackDelayB) return "";
+  if (!settings?.requireAttackDelayB && !optimizerUsesAttackDps(settings)) return "";
   const selected = optimizerAttackDelayBSelection(m, settings);
   return selected
     ? `${selected.kind === "attack" ? "アタック短縮" : `${selected.skill}スキル短縮`} ${fmt(selected.percent, 1)}%（同種の最大値：${selected.name}）`
-    : "スキル短縮・アタック短縮：未達";
+    : settings?.requireAttackDelayB ? "スキル短縮・アタック短縮：未達" : "スキル短縮・アタック短縮：なし";
 }
 
 function optimizerRequiredConditionViolations(m, settings) {
-  const violations = [];
+  const violations = optimizerUsesAttackDps(settings) ? (m.attackDps?.optimizationReasons || ["DPSを計算できません"]).slice() : [];
   const eps = 0.000001;
   if (settings?.requireAttackDelay60) {
     const value = +(m?.extraStats?.extraAttackDelay || 0);
@@ -10958,6 +11010,8 @@ function optimizerTargetRankForPrimary(m, settings) {
 }
 
 function optimizerEvaluationFromMetrics(m, settings) {
+  if (optimizerUsesAttackDps(settings) && !m.attackDps?.optimizationSupported)
+    return {score:OPTIMIZER_INVALID_SCORE, rank:[OPTIMIZER_INVALID_SCORE], violations:m.attackDps?.optimizationReasons || ["DPSを計算できません"]};
   const violations = optimizerStatCapViolations(m, settings).concat(optimizerTargetOverViolations(m, settings));
   if (violations.length) return {score: OPTIMIZER_INVALID_SCORE, rank: [OPTIMIZER_INVALID_SCORE], violations};
 
@@ -11063,12 +11117,18 @@ function optimizerPrepareRunCaches(settings) {
 
 // Calculation-only projection: preserve row order and leave candidate indices in the
 // original arrays. Disabled candidates have no effect on metrics or Buff precedence.
-function optimizerComputeMetrics(st, inputs) {
+function optimizerComputeMetrics(st, inputs, settings=null) {
   const compact = {...st,
     equipment: st.equipment.filter(row => row.enabled !== false),
     composite: st.composite.filter(row => row.enabled)
   };
-  return computeMetrics(compact, inputs);
+  if (!optimizerUsesAttackDps(settings)) return computeMetrics(compact, inputs);
+  const capture={};
+  const cfg=optimizerAttackDpsConfig(settings.attackDps);
+  const metrics=computeMetrics(compact, {...inputs, attackType:"attack", techMultiplier:1,
+    allowCrit:cfg.criticalCancel, critRate:cfg.criticalCancel ? 1 : 0}, capture);
+  optimizerAttachAttackDps(metrics, settings, capture);
+  return metrics;
 }
 
 function optimizerEquipmentRows(settings) {
@@ -11511,7 +11571,7 @@ function optimizerBuildEquipmentExact(inputs, settings) {
     if (groupIndex >= groups.length) {
       if (!optimizerSelectionHasMainWeapon(selected, settings)) return;
       const st = optimizerStateForSelection(selected, requiredBuffIdxs, settings);
-      const m = optimizerComputeMetrics(st, inputs);
+      const m = optimizerComputeMetrics(st, inputs, settings);
       if (globalThis.MOEOptimizerSkillPlusFixV1) {
         globalThis.MOEOptimizerSkillPlusFixV1.attachMetrics(m, selected, requiredBuffIdxs, settings);
       }
@@ -11581,7 +11641,7 @@ function optimizerBuildEquipmentBeams(inputs, settings) {
 
         const equipmentIdxs = optimizerCanonicalEquipmentIdxs(beam.equipmentIdxs.concat([cand.idx]), settings);
         const st = optimizerStateForSelection(equipmentIdxs, requiredBuffIdxs, settings);
-        const m = optimizerComputeMetrics(st, inputs);
+        const m = optimizerComputeMetrics(st, inputs, settings);
         if (globalThis.MOEOptimizerSkillPlusFixV1) {
           globalThis.MOEOptimizerSkillPlusFixV1.attachMetrics(m, equipmentIdxs, requiredBuffIdxs, settings);
         }
@@ -11634,7 +11694,7 @@ function optimizerEvaluateBuffSelection(equipmentIdxs, compositeIdxs, inputs, se
   }
 
   const st = optimizerStateForSelection(equipmentIdxs, compositeIdxs, settings);
-  const metrics = optimizerComputeMetrics(st, inputs);
+  const metrics = optimizerComputeMetrics(st, inputs, settings);
   if (globalThis.MOEOptimizerSkillPlusFixV1) {
     globalThis.MOEOptimizerSkillPlusFixV1.attachMetrics(metrics, equipmentIdxs, compositeIdxs, settings);
   }
@@ -11950,6 +12010,7 @@ function optimizerConsistencySettingsFromPayload(payload) {
   const source = payload || optimizerLastPayload || optimizerFallbackPayload || {};
   const payloadState = source.state || state || {};
   const settings = {...(source.settings || {})};
+  optimizerPrepareAttackDps(settings, payloadState.attackDps);
 
   settings._equipmentRows = normalizeEquipmentRows(
     Array.isArray(payloadState.equipment)
@@ -12068,7 +12129,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-pet-packages-20261102`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-dps-optimizer-20261103`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -12346,6 +12407,7 @@ function renderIntegratedOptimizerResults() {
 
   const diagnostics = `<details class="optimizerSearchDetails"><summary>結果の診断・探索範囲</summary>${optimizerApproximationDiagnosticsHtml()}</details>`;
   const resultSettings = optimizerLastPayload?.settings || {};
+  const showDps = optimizerUsesAttackDps(resultSettings);
   const showSkillPlus = resultSettings.objective === "skillPlus" || resultSettings.secondaryObjective === "skillPlus" || resultSettings.skillPlusFilters?.length;
   const skillHeading = resultSettings.skillPlusTargetSkill ? `${resultSettings.skillPlusTargetSkill}強化` : "スキル強化合計";
 
@@ -12372,6 +12434,8 @@ function renderIntegratedOptimizerResults() {
       <td class="optimizerRank">${escapeHtml(rankText)}</td>
       <td class="optimizerSourceCell">${escapeHtml(label)}${sourceNote}</td>
       ${showSkillPlus ? `<td class="num" title="${escapeHtml(globalThis.MOESkillPlusV21?.summary(m.skillPlusTotals || {}) || "")}">${fmt(m.skillPlusScore || 0,1)}</td>` : ""}
+      ${showDps ? `<td class="num">${m.attackDps?.optimizationSupported && !r.baselineInvalid ? fmt(m.attackDps.continuousDps,1) : "条件未達"}</td>
+      <td class="num">${m.attackDps?.supported ? `${fmt(m.attackDps.periodSec,1)}秒 / ${fmt(m.attackDps.attacksPerMinute,1)}回/分${m.attackDps.delaySec <= m.attackDps.motionLockSec ? "（モーション上限）" : ""}` : "未対応"}</td>` : ""}
       <td class="num">${damageValueText(m)}</td>
       <td class="num">${fmt(m.atk,1)}</td>
       <td class="num">${fmt(m.stats.magic,1)}</td>
@@ -12384,7 +12448,7 @@ function renderIntegratedOptimizerResults() {
   }).join("");
 
   el.innerHTML = `${diagnostics}<table>
-    <thead><tr><th>順位</th><th>種別</th>${showSkillPlus ? `<th>${escapeHtml(skillHeading)}</th>` : ""}<th>ダメージ</th><th>攻撃力</th><th>魔力</th><th>枠</th><th>追加ステータス</th><th>装備</th><th>装備以外Buff</th><th>適用</th></tr></thead>
+    <thead><tr><th>順位</th><th>種別</th>${showSkillPlus ? `<th>${escapeHtml(skillHeading)}</th>` : ""}${showDps ? "<th>DPS</th><th>攻撃間隔・回数</th>" : ""}<th>ダメージ</th><th>攻撃力</th><th>魔力</th><th>枠</th><th>追加ステータス</th><th>装備</th><th>装備以外Buff</th><th>適用</th></tr></thead>
     <tbody>${body}</tbody>
   </table>`;
 }
@@ -12393,6 +12457,13 @@ function applyIntegratedOptimizerResult(index) {
   const r = integratedOptimizerResults[index];
   if (!r) return;
 
+  const dpsSettings=optimizerLastPayload?.settings;
+  if (optimizerUsesAttackDps(dpsSettings)) {
+    state.attackDps=optimizerAttackDpsConfig(dpsSettings.attackDps || optimizerLastPayload?.state?.attackDps);
+    if (byId("attackType")) byId("attackType").value="attack";
+    if (byId("allowCrit")) byId("allowCrit").checked=state.attackDps.criticalCancel;
+    if (byId("critRate")) byId("critRate").value=state.attackDps.criticalCancel ? "1" : "0";
+  }
   const payloadState = optimizerLastPayload?.state || state || {};
   const sourceEquipment = normalizeEquipmentRows(
     Array.isArray(payloadState.equipment)
@@ -15595,7 +15666,7 @@ function ensureOptimizerCoreLoaded() {
 
   optimizerCoreLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "./src/optimizer/core.js?v=20261010-player-catalog";
+    script.src = "./src/optimizer/core.js?v=20261103-dps-optimizer";
     script.dataset.optimizerCore = "1";
     script.onload = () => {
       if (typeof runOptimizerCore === "function") resolve();
@@ -16539,6 +16610,10 @@ if (typeof document !== "undefined") {
     }
 
     try {
+      if (optimizerUsesAttackDps(optimizerLastPayload?.settings)) {
+        panel.innerHTML = "<summary>装備更新の目安</summary><p class=\"small\">DPSは上の結果一覧で比較してください。短縮の上限とクリティカル条件を含むため、単一ステータスへの換算は表示しません。</p>";
+        return;
+      }
       const analysis = analyzeTopOptimizerEquipmentContribution();
 
       if (!analysis || !analysis.contributions.length) {
@@ -16835,6 +16910,10 @@ if (typeof document !== "undefined") {
     }
 
     try {
+      if (optimizerUsesAttackDps(optimizerLastPayload?.settings)) {
+        panel.innerHTML = "<summary>Buff更新の目安</summary><p class=\"small\">DPSは上の結果一覧で比較してください。短縮の上限とクリティカル条件を含むため、単一ステータスへの換算は表示しません。</p>";
+        return;
+      }
       const analysis = analyzeTopOptimizerBuffContribution();
 
       if (!analysis || !analysis.contributions.length) {
@@ -17185,6 +17264,7 @@ if (typeof document !== "undefined") {
   }
 
   function appendReplacementThresholds() {
+    if (optimizerUsesAttackDps(optimizerLastPayload?.settings)) return;
     try {
       const equipment = analyzeWeakestEquipment();
       const equipmentPanel = byId("optimizerEquipmentContributionPanel");
