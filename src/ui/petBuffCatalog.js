@@ -59,7 +59,7 @@ function renderPetBuffCatalogList(){
   byId('petBuffCount').textContent=pets.length+' / '+api.catalogs.length+'件（モード別）';
   const list=byId('petBuffList');
   list.innerHTML=pets.length?pets.map(p=>`<button type="button" class="reviewedBuffCatalogCard${p.id===petBuffCatalogSelectedId?' selected':''}" data-pet-catalog-id="${escapeAttr(p.id)}" aria-pressed="${p.id===petBuffCatalogSelectedId}">
-    <span class="reviewedBuffCatalogCardTitle">${escapeHtml(p.name)}</span><span class="reviewedBuffCatalogCardMeta">${escapeHtml(p.mode)} · ${p.levelIndependent?'レベル非依存':'Lv'+p.buffs[0].level+'から'} · 最大${p.buffs.length}枠</span>
+    <span class="reviewedBuffCatalogCardTitle">${escapeHtml(p.name)}</span><span class="reviewedBuffCatalogCardMeta">${escapeHtml(p.mode)} · ${p.levelIndependent?'レベル非依存':'Lv'+p.buffs[0].level+'から'} · 最大${p.buffs.filter(b=>b.slot!==false).length}枠</span>
     <span class="reviewedBuffCatalogCardEffect">${escapeHtml([...new Set(p.buffs.map(b=>b.description))].join('／'))}</span></button>`).join(''):'<p class="reviewedBuffCatalogEmpty">該当するペットがありません。検索語を変えてください。</p>';
   list.querySelectorAll('[data-pet-catalog-id]').forEach(button=>button.onclick=()=>{
     petBuffCatalogSelectedId=button.dataset.petCatalogId;
@@ -85,19 +85,19 @@ function renderPetBuffCatalogPreview(){
   level.min=pet.minLevel;level.max=pet.maxLevel;level.disabled=!!pet.levelIndependent;
   try{
     const rows=api.build(pet.id,level.value),actor=rows.find(r=>r.catalogNumeric.inputs.petActor)?.catalogNumeric.inputs.petActor;byId('petBuffRegister').disabled=!rows.length;
-    preview.innerHTML='<h4>'+escapeHtml(pet.name)+'</h4><div class="small mutedText">'+escapeHtml(pet.mode)+'</div><div class="buffDurationBadge">使用Buff枠：'+rows.length+'枠（競合前）</div>'+
+    preview.innerHTML='<h4>'+escapeHtml(pet.name)+'</h4><div class="small mutedText">'+escapeHtml(pet.mode)+'</div><div class="buffDurationBadge">使用Buff枠：'+rows.filter(r=>r.slot!==false).length+'枠（競合前）</div>'+
       '<p class="small">'+escapeHtml(pet.condition||(pet.levelIndependent?'レベルに依存しないサポート効果です。':'選んだモードのBuffが飼い主に付いている場合の効果です。'))+'</p>'+
       (actor?'<p class="small">ペットのスキル '+escapeHtml(actor.skill.toFixed(1))+'・魔力 '+escapeHtml(actor.magic.toFixed(1))+' から計算（追加Buffなし）。効果量は変動の基準値です。</p>':'')+
       rows.map(r=>'<section class="petBuffEffect"><b>'+escapeHtml(r.name.slice(pet.name.length+1))+'</b><div class="reviewedBuffCatalogEffect">'+(r.catalogNumeric.values.some(v=>v.estimated)||r.catalogNumeric.times.some(t=>t.estimated)?'<span class="reviewedBuffCatalogBaseline">参考値を含む</span>':'')+escapeHtml(reviewedBuffCatalogEffectSummary(r))+'</div></section>').join('')+
-      '<p class="small">'+(external.checked?'他人のペットから受ける範囲Buffです。自分のペット数には含めず、Buff枠は使います。':'採用時は自分のペット1匹分を使います。Buff以外のペットと合わせて3匹までです。')+'</p>'+
+      '<p class="small">'+(external.checked?'他人のペットから受ける範囲Buffです。自分のペット数には含めず、Buff枠は使います。':'採用時は自分のペット'+(pet.petCount||1)+'匹分を使います。Buff以外のペットと合わせて3匹までです。')+'</p>'+
       '<p class="small">未使用・固定なしの候補として追加します。最適化で採用すると、このペットのBuffはすべて連動します。未使用の候補も探す設定で検索してください。同じペットの更新時は使用・固定・除外の指定を保持します。</p><details class="compactCompositeInfo"><summary>計算値・参考値・重複について</summary><p class="small">式が確認できた効果はレベルから計算します。自然回復の分間量には時間換算の推定を含みます。その他の参考値はwiki実測の目安です。実測点の間は直線補間し、範囲外は未計算とします。'+escapeHtml(pet.competition||(pet.firstWins?'先に登録した競合Buffが優先されます。':'他のBuffとの重複可否は未確認です。'))+'<a target="_blank" rel="noopener" href="'+escapeAttr(pet.url)+'">出典を見る</a></p></details>';
   }catch(e){preview.textContent=e.message;}
 }
 function makePetBuffTableRow(row){
   const tr=document.createElement('tr');tr.className='compactCompositeMainRow'+(row.fixed?' fixedRow':'')+(row.excluded?' excludedRow':'');
   for(const [prop,label] of [['enabled','使用'],['slot','枠使用'],['fixed','固定'],['excluded','除外']]){
-    const td=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.checked=prop==='slot'||!!row[prop];cb.disabled=prop==='slot';
-    cb.title=prop==='slot'?'採用時は付与されるBuffすべての枠を使います':'同じペットのBuffをまとめて'+label;cb.setAttribute('aria-label',row.name+'：'+label);
+    const td=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.checked=prop==='slot'?row.slot!==false:!!row[prop];cb.disabled=prop==='slot';
+    cb.title=prop==='slot'?(row.slot===false?'Buff枠を使わない周囲回復です':'採用時は付与されるBuffすべての枠を使います'):'同じペットのBuffをまとめて'+label;cb.setAttribute('aria-label',row.name+'：'+label);
     cb.onchange=()=>{
       const next=globalThis.MOE_PET_BUFF_CATALOG.setControls(state.composite,row.catalogInputs.petId,prop,cb.checked);
       if(!acceptPetPartyRows(next)){cb.checked=!!row[prop];return;}

@@ -9,6 +9,31 @@
  const resist=['extraNeutralRes','extraFireRes','extraWaterRes','extraWindRes','extraEarthRes'];
  const enhance=['flatAttack','flatMagic','extraHit','extraAvoid'];
  const catalogs=[
+  {id:'gremlin',name:'グレムリン',mode:'チューンナップON',minLevel:70,maxLevel:150,url:url('グレムリン'),condition:'Lv70以上、右クリックでチューンナップをONにし、飼い主に付与された場合。初期OFF。自身や他ペットにも使用するため、飼い主への常時維持は保証しません。Lv150の約52秒はwiki実測の参考値です。他レベルの持続時間は未計算。敵への弱体化・瞬間回復はこの登録に含めません。',buffs:[
+   {id:13735,name:'チューンナップ',level:70,description:'攻撃力・命中・回避・防御力・魔力が15%上昇',exact:{attackPct:15,extraHitPct:15,extraAvoidPct:15,extraACPct:15,magicPct:15},durationPoints:[[150,52]]}
+  ]},
+  {id:'support-happy',name:'サポート ハッピー',mode:'ハッピーサポート',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/サポート_ハッピー',condition:'回避支援が飼い主に付与されている場合。任意発動の飛行Buffは含めません。',buffs:[
+   {id:9041,name:'ハッピーサポート',level:0,description:'回避が15%上昇',exact:{extraAvoidPct:15}}
+  ]},
+  {id:'support-mavis',name:'サポート メイビス',mode:'メイビスサポート',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://note.com/qarpap_1gou/n/n42c660627549',condition:'支援Buffが飼い主に付与されている場合。使用可能になるフェアリーグリッターのダメージは加算しません。',buffs:[
+   {id:9052,name:'メイビスサポート',level:0,description:'魔力が10%上昇・フェアリーグリッター使用可能',exact:{magicPct:10}}
+  ]},
+  {id:'support-charle',name:'サポート シャルル',mode:'シャルルサポート',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/サポート_シャルル',condition:'サポートを指示し、Buffが飼い主に付与された場合。MP消費軽減は表示のみで、魔法の消費MP計算には未反映です。別に指示する飛行Buffは含めません。',buffs:[
+   {id:9063,name:'シャルルサポート',level:0,description:'消費MPを10%軽減',displayValues:[{name:'消費MP軽減（表示のみ）',value:10,unit:'%'}]}
+  ]},
+  {id:'halloween-cat',name:'ハロウィン キャット',mode:'サポートON',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:url('ハロウィン キャット'),condition:'右クリックで支援をONにした場合。育成形態・アバター形態とも対象。180秒は付与1回の時間で、離れると途中でも解除されます。',buffs:[
+   {id:13134,name:'ハロウィンキャットサポート',level:0,description:'魔力・移動速度が10%上昇',exact:{magicPct:10,speedPct:10}}
+  ]},
+  {id:'botamochi',name:'牡丹餅',mode:'チューチューダンスON',minLevel:60,maxLevel:150,url:url('牡丹餅'),condition:'Lv60以上でダンスをONにし、範囲内で支援を受けた場合。魔法ディレイ25%短縮。詠唱時間の短縮率には読み替えません。持続はwikiの約5秒を参考表示します。',buffs:[
+   {id:3784,name:'チューチューダンス',level:60,durationReference:5,description:'範囲内の魔法ディレイを25%短縮',exact:{extraMagicDelayPct:-25}}
+  ]},
+  ...[1,2,3].map(count=>({id:'shimaenaga-'+count,family:'shimaenaga',name:'シマエナガ',mode:count+'羽・全羽が近くにいる',petCount:count,minLevel:0,maxLevel:150,levelIndependent:true,url:'https://scrapbox.io/medianmoe/シマエナガ',condition:'ペットウィンドウ内のシマエナガが'+count+'羽で、その全羽が近くにいる条件。周期回復の参考値を表示し、自然回復・DPSには加算しません。Buff枠は使いません。移動で回復機会が減るため、分間量は範囲内に居続けた目安です。',buffs:[
+   {id:'shimaenaga-pulse',ambient:true,slot:false,name:'周囲回復',level:0,description:count+'羽による'+['HP','HP・MP','HP・MP・ST'][count-1]+'周期回復',periodic:[{resources:['HP','MP','ST'].slice(0,count),points:[[0,10*count]],intervalSeconds:10,showPerMinute:true}]}
+  ]})),
+  {id:'guinea-pig',name:'モルモット',mode:'成体1匹・周囲回復',minLevel:0,maxLevel:150,levelIndependent:true,url:'https://scrapbox.io/medianmoe/モルモット',condition:'進化後のモルモット1匹の近くにいる条件。約10.25秒ごとにHP・MP・STを各10回復する実測目安です。周期回復は表示のみで、自然回復・DPSには加算しません。Buff枠は使いません。',buffs:[
+   {id:'guinea-pig-pulse',ambient:true,slot:false,name:'周囲回復',level:0,description:'周囲のHP・MP・STを周期回復',periodic:[{resources:['HP','MP','ST'],points:[[0,10]],intervalSeconds:10.25,showPerMinute:true}]}
+  ]},
+
   {id:'tuxedo-dog',name:'タキシード犬',mode:'成犬・アニバーサリー フェスティバルON',minLevel:110,maxLevel:150,duration:90,url:url('タキシード犬'),competition:'浴衣フィニュのサマー フェスティバルとは併用不可。アニバーサリー フェスティバルを優先します。',condition:'成犬・Lv110以上で右クリックからONにし、Buffが付与された場合。WarAgeでは無効。回避を含む5能力はレベルによらず19%です。',buffs:[
    {id:13726,name:'アニバーサリー フェスティバル',level:110,tags:'pet-festival',description:'攻撃力・命中・回避・防御力・魔力が19%上昇',exact:{attackPct:19,extraHitPct:19,extraAvoidPct:19,extraACPct:19,magicPct:19}}
   ]},
@@ -108,7 +133,7 @@
    {id:4882,name:'猫又憑依',level:40,description:'最大HP・攻撃力・回避上昇',durationPoints:[[150.1,90]],observations:[{fields:['extraHP'],ranges:[[60.1,26,29],[150.1,53,56]]},{fields:['flatAttack','extraAvoid'],ranges:[[60.1,12.8,13.4],[150.1,29,29.7]]}]}
   ]}
  ];
- const labels={extraAC:'防御力',flatAttack:'攻撃力',flatMagic:'魔力',flatSpeed:'移動速度',extraHit:'命中',extraAvoid:'回避',extraHP:'最大HP',extraMP:'最大MP',extraMPPct:'最大MP',dmgPct:'物理ダメージ上昇',attackPct:'攻撃力',magicPct:'魔力',speedPct:'移動速度',extraACPct:'防御力',extraHitPct:'命中',extraAvoidPct:'回避',extraAttackDelay:'攻撃ディレイ',extraMagicDelay:'魔法ディレイ',extraDamageReducePct:'被ダメージ軽減',hpRegenPerMinute:'HP自然回復',mpRegenPerMinute:'MP自然回復',stRegenPerMinute:'ST自然回復',extraNeutralRes:'無耐性',extraFireRes:'火耐性',extraWaterRes:'水耐性',extraWindRes:'風耐性',extraEarthRes:'地耐性'};
+ const labels={extraAC:'防御力',flatAttack:'攻撃力',flatMagic:'魔力',flatSpeed:'移動速度',extraHit:'命中',extraAvoid:'回避',extraHP:'最大HP',extraMP:'最大MP',extraMPPct:'最大MP',dmgPct:'物理ダメージ上昇',attackPct:'攻撃力',magicPct:'魔力',speedPct:'移動速度',extraACPct:'防御力',extraHitPct:'命中',extraAvoidPct:'回避',extraAttackDelay:'攻撃ディレイ',extraMagicDelay:'魔法ディレイ',extraMagicDelayPct:'魔法ディレイ',extraDamageReducePct:'被ダメージ軽減',hpRegenPerMinute:'HP自然回復',mpRegenPerMinute:'MP自然回復',stRegenPerMinute:'ST自然回復',extraNeutralRes:'無耐性',extraFireRes:'火耐性',extraWaterRes:'水耐性',extraWindRes:'風耐性',extraEarthRes:'地耐性'};
  function observation(points,level){
   const exact=points.find(p=>p[0]===level);if(exact)return {value:exact[1],kind:'wiki実測の目安'};
   for(let i=1;i<points.length;i++)if(points[i-1][0]<level&&level<points[i][0]){const [x,a]=points[i-1],[y,b]=points[i];return {value:a+(b-a)*(level-x)/(y-x),kind:'wiki実測値間の直線補間（推定）'};}
@@ -141,18 +166,21 @@
     const sample=observed(o,level),name=o.name||(o.resources.join('・')+'周期回復量');
     if(!sample){pending.push({id:b.id+':observation:'+i,name,category:'参考値なし',reason:'このレベルの実測値と確定式がありません'});continue;}
     kinds.add(sample.kind);
-    for(const resource of o.resources||[''])values.push({id:b.id+':observation:'+i+resource,name:o.name||(resource+'回復量'),value:sample.value,unit:o.unit||resource,scope:o.periodic?'周期回復1回分':'表示のみ',estimated:true,...(o.intervalSeconds?{intervalSeconds:o.intervalSeconds}:{})});
+    for(const resource of o.resources||['']){
+     values.push({id:b.id+':observation:'+i+resource,name:o.name||(resource+'回復量'),value:sample.value,unit:o.unit||resource,scope:o.periodic?'周期回復1回分':'表示のみ',estimated:true,...(o.intervalSeconds?{intervalSeconds:o.intervalSeconds}:{})});
+     if(o.showPerMinute&&o.intervalSeconds>0)values.push({id:b.id+':perMinute:'+i+resource,name:resource+'周期回復（範囲内・分間目安）',value:sample.value*60/o.intervalSeconds,unit:resource+'/分',scope:'表示のみ',estimated:true});
+    }
    }
-   let seconds=b.duration??pet.duration,timeEstimated=false;
+   let seconds=b.durationReference??b.duration??pet.duration,timeEstimated=Number.isFinite(b.durationReference);
    if(b.durationPoints){const sample=observation(b.durationPoints,level);seconds=sample?.value;timeEstimated=!!sample;}
    if(Number.isFinite(calculated?.seconds)){seconds=calculated.seconds;timeEstimated=false;}
-   if(!Number.isFinite(seconds))pending.push({id:b.id+':duration',name:b.name+'の持続時間',category:'時間未確認',reason:'このレベルの時間の実測値と入力換算が未確認'});
+   if(!Number.isFinite(seconds)&&!b.ambient)pending.push({id:b.id+':duration',name:b.name+'の持続時間',category:'時間未確認',reason:'このレベルの時間の実測値と入力換算が未確認'});
    const times=Number.isFinite(seconds)?[{definitionId:b.id,name:b.name,seconds,conditional:false,estimated:timeEstimated}]:[];
-   return {name:pet.name+'：'+b.name,enabled:false,fixed:false,excluded:false,slot:true,...fields,
-    tags:b.tags||(pet.firstWins?'pet-support:'+b.group:''),stackRule:pet.firstWins?'first':'',clientBuffDefinitionId:String(b.id),...(Number.isFinite(seconds)?{durationSeconds:seconds}:{}),
+   return {name:pet.name+'：'+b.name,enabled:false,fixed:false,excluded:false,slot:b.slot!==false,...fields,
+    tags:b.tags||(pet.firstWins?'pet-support:'+b.group:''),stackRule:pet.firstWins?'first':'',...(Number.isInteger(b.id)?{clientBuffDefinitionId:String(b.id)}:{}),...(Number.isFinite(seconds)?{durationSeconds:seconds}:{}),
     catalogSource:'pet-owner-buff-v1',catalogRuleId:'pet:'+pet.id+':'+b.id,catalogInputs:{petId:pet.id,petLevel:level,petFamily:pet.family||pet.id},
     extraEffects:[{key:'custom',name:b.description,scope:'display',unit:'',note:''}],
-    note:pet.mode+'・Buff付与時の効果／'+(pet.levelIndependent?'レベル非依存':'Lv'+level)+'／'+([...kinds].join('・')||'効果の説明と確認済みの時間を表示')+'。'+(timeEstimated?'持続時間はwiki実測の参考値。':'')+(pet.condition||'')+(pet.competition||(pet.firstWins?'同じ競合グループは先に付いたBuffを優先。':'他のBuffとの重複可否は未確認。'))+'魔力増減など追加補正なし。',
+    note:pet.mode+(b.ambient?'・範囲内での回復／':'・Buff付与時の効果／')+(pet.levelIndependent?'レベル非依存':'Lv'+level)+'／'+([...kinds].join('・')||'効果の説明と確認済みの時間を表示')+'。'+(timeEstimated?'持続時間はwiki実測の参考値。':'')+(pet.condition||'')+(pet.competition||(pet.firstWins?'同じ競合グループは先に付いたBuffを優先。':'他のBuffとの重複可否は未確認。'))+'魔力増減など追加補正なし。',
     catalogNumeric:{version:1,key:'pet:'+pet.id+':'+b.id,values,pending,applied,estimatedFields,times,inputs:{petId:pet.id,petLevel:level,...(calculated?{petActor:calculated.source,quantityBasis:'client-base-seed10'}:{})}}
    };
   });
