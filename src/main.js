@@ -6432,6 +6432,7 @@ const DEFAULT_STATE = () => ({
   skillSim: defaultSkillSimState(),
   attackDps: defaultAttackDpsState(),
   combatTrial: null,
+  petParty: MOE_PET_PARTY.normalize(),
   equipment: defaultEquipmentRows(),
   flat: [],
   conv: [],
@@ -7245,7 +7246,7 @@ function splitTags(value) {
 
 /* 競合グループ名。複数書かれている場合、v1では先頭グループを重複判定に使う。 */
 function buffGroupName(row) {
-  return splitTags(row.tags)[0] || row.autoStackGroup || "";
+  return splitTags(row.tags)[0] || row.autoStackGroup || (["6576","13726"].includes(String(row.clientBuffDefinitionId)) ? "pet-festival" : "");
 }
 
 /* 同一競合グループ内で代表を選ぶための暫定スコア。
@@ -7282,6 +7283,12 @@ function compositeGroupScore(r) {
 }
 
 function buffGroupResolveScore(row, order=0, type="composite") {
+  // Confirmed shared group6576: Anniversary always supersedes Summer.
+  // Derive the priority from definition IDs, including older saved pet rows;
+  // do not rewrite their stored values or infer IDs from manually typed names.
+  const festivalId=String(row?.clientBuffDefinitionId||"");
+  if(festivalId==="13726")return 2000000000;
+  if(festivalId==="6576")return 1000000000;
   const rule = String(row?.stackRule || "").toLowerCase();
   if(rule==='first')return 1000000000-order;
   const food = /^food:([a-f])([1-4]?)$/.exec(rule);
@@ -7459,6 +7466,7 @@ function applyBuffGroupRules(st) {
  * 計算値そのものには影響しない表示専用処理。
  */
 function updateBuffHeaderStats(metrics=null) {
+  if(typeof updatePetPartyControls==='function')updatePetPartyControls();
   if (typeof document === "undefined") return;
 
   const composite = normalizeCompositeRows(state?.composite || []);
@@ -10972,6 +10980,7 @@ function optimizerAttackDelayBResultText(m, settings) {
 
 function optimizerRequiredConditionViolations(m, settings) {
   const violations = optimizerUsesAttackDps(settings) ? (m.attackDps?.optimizationReasons || ["DPSを計算できません"]).slice() : [];
+  if(m.petParty?.excess>0)violations.push(`自分のペット ${m.petParty.total}/3匹（Buff以外 ${m.petParty.other}匹を含む）`);
   const eps = 0.000001;
   if (optimizerMotionLimitMissing(m, settings)>0) {
     const d=m.attackDps;
@@ -11078,7 +11087,10 @@ function optimizerEvaluationFromMetrics(m, settings) {
     rank = rank.concat(objectives.map(obj => optimizerMetricValueForSettings(m, obj, settings)));
   }
   if (settings?.requireAttackDelay60) rank.push(-optimizerAttackDelay60Excess(m));
-  return {score: rank[0] ?? 0, rank, violations: []};
+  const petExcess=m.petParty?.excess||0;
+  const score=rank[0] ?? 0;
+  rank.unshift(petExcess===0?1:0,-petExcess);
+  return {score, rank, violations: []};
 }
 
 function optimizerMetricValueWithCaps(m, objective, settings=null) {
@@ -12157,7 +12169,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-dps-motion-required-20261103`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-pet-party-20261103`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -12440,7 +12452,7 @@ function renderIntegratedOptimizerResults() {
   const skillHeading = resultSettings.skillPlusTargetSkill ? `${resultSettings.skillPlusTargetSkill}強化` : "スキル強化合計";
 
   if (!integratedOptimizerResults.length) {
-    el.innerHTML = `${diagnostics}<p class="small">条件内に収まる結果がありません。${showDps && optimizerRequiresMotionLimit(resultSettings) ? "モーション上限に届く通常短縮とスキル・アタック短縮の組み合わせが必要です。" : ""}バフ枠上限、各ステータス上限、競合グループ、装備同士の競合、候補の使用状況を見直してください。</p>`;
+    el.innerHTML = `${diagnostics}<p class="small">条件内に収まる結果がありません。${showDps && optimizerRequiresMotionLimit(resultSettings) ? "モーション上限に届く通常短縮とスキル・アタック短縮の組み合わせが必要です。" : ""}自分のペット3匹上限（Buff以外のペットを含む）、バフ枠上限、各ステータス上限、競合グループ、装備同士の競合、候補の使用状況を見直してください。</p>`;
     return;
   }
 
@@ -12493,6 +12505,7 @@ function applyIntegratedOptimizerResult(index) {
     if (byId("critRate")) byId("critRate").value=state.attackDps.criticalCancel ? "1" : "0";
   }
   const payloadState = optimizerLastPayload?.state || state || {};
+  state.petParty = MOE_PET_PARTY.normalize(payloadState.petParty);
   const sourceEquipment = normalizeEquipmentRows(
     Array.isArray(payloadState.equipment)
       ? payloadState.equipment
@@ -15719,7 +15732,7 @@ function bindCalcRefreshInput(el) {
   // Catalog and these controls already exist during application startup.
   // Combat trial controls use their own evaluator; searching and changing its
   // conditions must not run the build calculator or persist registered data.
-  if (!el || el.id === "targetPreset" || el.id === "comparePresetSelect" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalogOverlay') || el.closest?.('#attackDpsRoot')) return;
+  if (!el || el.id === "targetPreset" || el.id === "comparePresetSelect" || el.closest?.('[data-tab-panel="catalog"]') || el.closest?.(".clientBuildReference") || el.closest?.("#combatCatalogTrial") || el.closest?.('#petBuffCatalogOverlay') || el.closest?.('#petPartyControls') || el.closest?.('#attackDpsRoot')) return;
   if (el.dataset.moeCalcRefreshBound === "1") return;
   el.dataset.moeCalcRefreshBound = "1";
   let lastInputValue = null;

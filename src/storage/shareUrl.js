@@ -191,6 +191,7 @@ function collectShowcaseShareConfig() {
       weaponReq: [],
       skillSim: shareCompactSkillSim(st.skillSim),
       attackDps: normalizeAttackDpsState(st.attackDps),
+      petParty: MOE_PET_PARTY.normalize(st.petParty),
       combatTrial: st.combatTrial?.version===1 ? JSON.parse(JSON.stringify(st.combatTrial)) : null,
       equipment: normalizeEquipmentRows(st.equipment)
         .filter(r => (r.enabled !== false || r.optimizerFixed || r.optimizerExcluded) && equipmentCandidateHasData(r))

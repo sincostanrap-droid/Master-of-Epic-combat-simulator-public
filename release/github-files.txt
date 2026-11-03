@@ -278,3 +278,6 @@ worker/README.md
 worker/moe-idb-proxy-worker.js
 tests/optimizerAttackDps.test.cjs
 tests/dpsMotionLimitPresentation.test.cjs
+tests/petBuffExpansion.test.cjs
+src/domain/petParty.js
+tests/petPartyLimit.test.cjs

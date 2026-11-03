@@ -15,6 +15,7 @@ function totalStatValue(base, flat=0, pct=0) {
 }
 
 function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=null) {
+  const petParty=MOE_PET_PARTY.usage(st);
   inputs = standardCalculationInputs(inputs);
   st = globalThis.MOE_WIKI_PLAYER_EFFECTS?.refreshState(st) || st;
   st = expandSkillSimMasteryBuffState(st);
@@ -262,7 +263,7 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     stats, pctStats, conv, pctAtkCalc, spirit, magicCoeff, baseMagicFromSpirit, flatStatRaw, equipmentRaw, extraStats, armorAC, defense,
     racialAtk, weaponAtk, weaponDamage, weaponWeight, selectedWeapon, selectedAmmo, effectiveWeapon, skillModInfo, baseNaturalAtk, conversionAtk, baseAtk, flatAtkRaw, extraRawBeforePct, cappedAddRawBeforePct, cappedAddBeforePct, atkBeforePct, atkPctMode, atkBuffRaw, atkCap, atkBuffCapped, atk,
     attackMultiplier, dmgMultiplier, defenseFactor, critAvg, basePostMultiplier, npcDamageTakenMultiplier, postMultiplier, baseNoTech,
-    rawDamage, finalDamage, attackFollowups, attackExpectedDamage, slots, specialMultiplier, damagePrediction, techniqueContext,
+    rawDamage, finalDamage, attackFollowups, attackExpectedDamage, slots, petParty, specialMultiplier, damagePrediction, techniqueContext,
     baseTargetAC, npcAcDelta, effectiveTargetAC: ac,
     equippedWeaponSkill, weaponSkillHit, playerHit, baseTargetEvasion, npcEvasionDelta, effectiveTargetEvasion, rawHitRatePct, hitRatePct,
     forcedEvasion: activeForcedEvasionFromState(st),

@@ -118,6 +118,7 @@ function serializeConfigAsTsv(cfg) {
     Object.keys(inputs).map(k => ({key: k, value: inputs[k]}))
   ));
 
+  out.push(makeTsvSection("petParty", ["otherPets"], [MOE_PET_PARTY.normalize(st.petParty)]));
   out.push(makeTsvSection("combatTrial", ["settings"], [{settings:JSON.stringify(st.combatTrial ?? null)}]));
 
   out.push(makeTsvSection("attackDps", ["key", "value"],
@@ -367,6 +368,7 @@ function parseConfigFromTsv(text) {
   let combatTrial=null;
   try {const value=JSON.parse(sections.combatTrial?.rows?.[0]?.settings||"null");if(value?.version===1)combatTrial=value;} catch {}
   const stateOut = {
+    petParty: MOE_PET_PARTY.normalize(sections.petParty?.rows?.[0]),
     combatTrial,
     attackDps: normalizeAttackDpsState(attackDpsFromTsv),
     skillSim: normalizeSkillSim(skillSimFromTsv),
@@ -1083,7 +1085,7 @@ function normalizeImportedConfig(raw) {
 
   if (raw.inputs && raw.state) return raw;
 
-  const stateLikeKeys = ["weaponReq", "skillSim", "attackDps", "combatTrial", "equipment", "composite", "pct", "flat", "conv", "dmg", "special", "post", "other"];
+  const stateLikeKeys = ["weaponReq", "skillSim", "attackDps", "combatTrial", "petParty", "equipment", "composite", "pct", "flat", "conv", "dmg", "special", "post", "other"];
   if (stateLikeKeys.some(k => raw[k] !== undefined)) {
     return {inputs: collectInputs(), state: raw};
   }
@@ -1118,6 +1120,7 @@ function applyConfig(cfg) {
     state.weaponReq = normalizeWeaponReqRows(incoming.weaponReq, normalized.inputs || {});
     state.skillSim = normalizeSkillSim(incoming.skillSim);
     state.attackDps = normalizeAttackDpsState(incoming.attackDps);
+    state.petParty = MOE_PET_PARTY.normalize(incoming.petParty);
     state.combatTrial = incoming.combatTrial?.version===1 ? clone(incoming.combatTrial) : null;
     state.composite = Array.isArray(incoming.composite) ? normalizeCompositeRows(incoming.composite) : state.composite;
     state.equipment = normalizeEquipmentRows(incoming.equipment);

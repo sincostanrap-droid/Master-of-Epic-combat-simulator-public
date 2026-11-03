@@ -235,3 +235,4 @@ styles/catalogWorkspace.css
 styles/combatTrial.css
 styles/main.css
 styles/settingsCompact.css
+src/domain/petParty.js

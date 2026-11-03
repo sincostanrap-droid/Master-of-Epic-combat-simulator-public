@@ -15,6 +15,7 @@ importScripts(
   "../calc/orderedStats.js?v=20261006-product-formulas",
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
+  "../domain/petParty.js?v=20261103-pet-party",
   "../domain/attackDpsState.js?v=20261103-dps-motion-required",
   "../domain/catalogData.js?v=20261027",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
@@ -45,8 +46,8 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261014-equipment",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261103-dps-motion-required",
-  "../calc/core.js?v=20261027",
+  "../main.js?v=20261103-pet-party",
+  "../calc/core.js?v=20261103-pet-party",
   "./core.js?v=20261103-dps-optimizer"
 );
 

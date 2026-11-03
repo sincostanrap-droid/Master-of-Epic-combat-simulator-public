@@ -35,7 +35,7 @@ assert.equal(nodes.petBuffCatalogOpen.className,'buffCatalogPrimaryButton');asse
 const open=()=>nodes.petBuffCatalogOpen.onclick();
 const search=text=>{nodes.petBuffSearch.value=text;nodes.petBuffSearch.oninput();};
 const choose=id=>{const card=nodes.petBuffList.querySelectorAll('[data-pet-catalog-id]').find(el=>el.dataset.petCatalogId===id);assert.ok(card);card.onclick();return card;};
-open();assert.match(nodes.petBuffCatalogOverlay.innerHTML,/role="dialog"/);assert.equal(nodes.petBuffList.cards.length,26);
+open();assert.match(nodes.petBuffCatalogOverlay.innerHTML,/role="dialog"/);assert.equal(nodes.petBuffList.cards.length,pet.catalogs.length);
 assert.equal(p.document.activeElement,nodes.petBuffSearch);assert.match(nodes.petBuffPreview.innerHTML,/4枠/);
 assert.match(nodes.petBuffPreview.innerHTML,/参考値/);assert.match(nodes.petBuffPreview.innerHTML,/実測点/);
 assert.match(nodes.petBuffPreview.innerHTML,/スキル 150\.0・魔力 152\.0/);assert.match(nodes.petBuffPreview.innerHTML,/変動の基準値/);
@@ -75,6 +75,54 @@ nodes.petBuffCatalogOverlay.events.keydown({key:'Tab',shiftKey:true,preventDefau
 nodes.petBuffCatalogOverlay.events.keydown({key:'Escape',preventDefault:()=>prevented=true});assert.equal(nodes.petBuffCatalogOverlay,undefined);
 open();const overlay=nodes.petBuffCatalogOverlay;overlay.events.mousedown({target:overlay});assert.equal(nodes.petBuffCatalogOverlay,undefined);
 assert.deepEqual(state.composite[0],retained);
+// Added owner supports are searchable and retain their level/condition limits.
+open();search('アニバーサリー');assert.equal(nodes.petBuffList.cards.length,1);
+nodes.petBuffLevel.value='109.9';nodes.petBuffLevel.oninput();assert.equal(nodes.petBuffRegister.disabled,true);
+nodes.petBuffLevel.value='110';nodes.petBuffLevel.oninput();assert.equal(nodes.petBuffRegister.disabled,false);
+assert.match(nodes.petBuffPreview.innerHTML,/回避\+19%/);assert.match(nodes.petBuffPreview.innerHTML,/90/);
+assert.match(nodes.petBuffPreview.innerHTML,/併用不可/);assert.match(nodes.petBuffPreview.innerHTML,/WarAge/);
+search('エンジョイ');nodes.petBuffLevel.value='80.1';nodes.petBuffLevel.oninput();
+assert.match(nodes.petBuffPreview.innerHTML,/移動速度\+20/);assert.match(nodes.petBuffPreview.innerHTML,/10秒/);
+search('エトナ');assert.equal(nodes.petBuffLevelWrap.hidden,true);assert.match(nodes.petBuffPreview.innerHTML,/反射成立時/);
+assert.match(nodes.petBuffPreview.innerHTML,/50%/);assert.match(nodes.petBuffPreview.innerHTML,/DPSへ加算しません/);
+nodes.petBuffCatalogCancel.onclick();assert.deepEqual(state.composite[0],retained);
+// Party source/reservation UI updates only its own state and preserves existing rows.
+const party=require('../src/domain/petParty');
+state.composite=[retained,...['magia-bit','laharl-sd','la-pucelle-avatar','tuxedo-dog'].flatMap(id=>pet.build(id,150))];state.petParty={otherPets:2};
+p.updatePetPartyControls();assert.equal(nodes.petPartyOtherPets.value,'2');
+assert.match(nodes.petPartyStatus.textContent,/0匹 ＋ その他 2匹/);
+const magiaRow=p.makePetBuffTableRow(state.composite[1]);magiaRow.children[0].children[0].checked=true;magiaRow.children[0].children[0].onchange();
+assert.equal(party.usage(state).total,3);
+const laharl=state.composite.find(r=>r.catalogInputs?.petId==='laharl-sd');const laharlRow=p.makePetBuffTableRow(laharl);
+laharlRow.children[0].children[0].checked=true;laharlRow.children[0].children[0].onchange();assert.equal(party.usage(state).total,3);assert.equal(laharlRow.children[0].children[0].checked,false);assert.match(nodes.petPartyStatus.textContent,/3匹まで/);
+const dog=state.composite.find(r=>r.catalogInputs?.petId==='tuxedo-dog'),dogRow=p.makePetBuffTableRow(dog),sourceToggle=dogRow.children[5].children[0].children[0];
+sourceToggle.checked=true;sourceToggle.onchange();
+const enabledDog=p.makePetBuffTableRow(state.composite.find(r=>r.catalogInputs?.petId==='tuxedo-dog'));enabledDog.children[0].children[0].checked=true;enabledDog.children[0].children[0].onchange();
+assert.equal(party.usage(state).external,1);assert.equal(party.usage(state).total,3);
+const usedDog=p.makePetBuffTableRow(state.composite.find(r=>r.catalogInputs?.petId==='tuxedo-dog'));const toggleBack=usedDog.children[5].children[0].children[0];toggleBack.checked=false;toggleBack.onchange();assert.equal(toggleBack.checked,true);assert.equal(party.usage(state).external,1);
+open();search('アニバーサリー');assert.equal(nodes.petBuffExternal.checked,true);nodes.petBuffLevel.value='150';nodes.petBuffRegister.onclick();assert.equal(party.usage(state).external,1,'registration updates preserve source');
+open();search('マギア');assert.equal(nodes.petBuffExternalWrap.hidden,true);assert.equal(nodes.petBuffExternal.checked,false);nodes.petBuffCatalogCancel.onclick();
+nodes.petPartyOtherPets.value='3';nodes.petPartyOtherPets.onchange();assert.equal(state.petParty.otherPets,3);assert.equal(party.usage(state).total,4);assert.match(nodes.petPartyStatus.textContent,/超えています/);
+assert.ok(state.composite.find(r=>r.catalogInputs?.petId==='magia-bit').enabled,'existing rows not disabled on reservation changes');
+nodes.petPartyOtherPets.value='0';nodes.petPartyOtherPets.onchange();assert.equal(party.usage(state).total,1);
+nodes.petPartyOtherPets.value='-1';nodes.petPartyOtherPets.onchange();assert.equal(state.petParty.otherPets,0);assert.equal(nodes.petPartyOtherPets.value,'0');
+assert.deepEqual(state.composite[0],retained);
+// Apply the actual restore path and autosave the restored state, then reload it.
+for(const f of ['src/storage/importExport.js','src/storage/shareUrl.js'])vm.runInContext(fs.readFileSync(f,'utf8'),p);
+p.setInputs=()=>{};p.collectInputs=()=>({});p.renderAll=()=>p.updatePetPartyControls();p.syncSkillSimToCalcInputs=()=>{};p.setImportStatus=()=>{};p.alert=message=>{throw Error(message)};
+let autosaved;p.calc=()=>{p.updatePetPartyControls();autosaved=JSON.stringify(p.collectConfig());};
+const cfg={inputs:{},state:structuredClone(state)};cfg.state.petParty={otherPets:2};
+const tsvRestored=p.parseConfigFromTsv(p.serializeConfigAsTsv(cfg));
+assert.equal(p.applyConfig(tsvRestored),true);assert.equal(nodes.petPartyOtherPets.value,'2');
+const shared=p.collectShowcaseShareConfig();
+for(const restored of [tsvRestored,shared]){
+ assert.equal(p.applyConfig(restored),true);assert.equal(nodes.petPartyOtherPets.value,'2');
+ assert.equal(p.applyConfig(JSON.parse(autosaved)),true);assert.equal(nodes.petPartyOtherPets.value,'2');
+ const current=p.collectConfig().state;assert.equal(party.usage(current).external,1);assert.equal(party.usage(current).total,3);
+ const sourceRow=p.makePetBuffTableRow(current.composite.find(r=>r.catalogInputs?.petId==='tuxedo-dog'));
+ assert.equal(sourceRow.children[5].children[0].children[0].checked,true);
+}
+const legacy=structuredClone(cfg);delete legacy.state.petParty;assert.equal(p.applyConfig(legacy),true);assert.equal(nodes.petPartyOtherPets.value,'0');assert.equal(JSON.parse(autosaved).state.petParty.otherPets,0);
 // Result cards use the computed motion boundary; no changed damage rounding.
 vm.runInContext(fs.readFileSync('src/ui/attackDpsResult.js','utf8'),p);
 nodes.attackDpsResult={};p.attackDpsState=()=>({damageSource:'manual'});

@@ -4,10 +4,26 @@
 // Verified profiles use client formulas; other observations stay references.
 (function(root){'use strict';
  const petFormulas=typeof module!=='undefined'&&module.exports?require('../calc/petBuffFormulas.js'):root.MOE_PET_BUFF_FORMULAS;
+ const party=typeof module!=='undefined'&&module.exports?require('./petParty.js'):root.MOE_PET_PARTY;
  const url=name=>'https://wikiwiki.jp/moe-pet/'+encodeURIComponent('ペット/特殊/'+name);
  const resist=['extraNeutralRes','extraFireRes','extraWaterRes','extraWindRes','extraEarthRes'];
  const enhance=['flatAttack','flatMagic','extraHit','extraAvoid'];
  const catalogs=[
+  {id:'tuxedo-dog',name:'タキシード犬',mode:'成犬・アニバーサリー フェスティバルON',minLevel:110,maxLevel:150,duration:90,url:url('タキシード犬'),competition:'浴衣フィニュのサマー フェスティバルとは併用不可。アニバーサリー フェスティバルを優先します。',condition:'成犬・Lv110以上で右クリックからONにし、Buffが付与された場合。WarAgeでは無効。回避を含む5能力はレベルによらず19%です。',buffs:[
+   {id:13726,name:'アニバーサリー フェスティバル',level:110,tags:'pet-festival',description:'攻撃力・命中・回避・防御力・魔力が19%上昇',exact:{attackPct:19,extraHitPct:19,extraAvoidPct:19,extraACPct:19,magicPct:19}}
+  ]},
+  {id:'harmonica-panda',name:'ハーモニカぱんだ',mode:'エンジョイ マーチ',minLevel:80.1,maxLevel:150,duration:10,url:url('ハーモニカぱんだ'),condition:'Lv80.1以上で周囲のPCに付与された場合。移動速度+20、持続10秒。wikiのLv80.1実測約9秒とは別に、計算には効果定義の10秒を使用します。',buffs:[
+   {id:7161,name:'エンジョイ マーチ',level:80.1,description:'移動速度が20上昇',exact:{flatSpeed:20}}
+  ]},
+  {id:'laharl-sd',name:'ラハール SD',mode:'魔王の威厳',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/ラハール_SD',condition:'アバターの支援Buffが付与された場合。WarAgeでは無効。',buffs:[
+   {id:8584,name:'魔王の威厳',level:0,description:'攻撃力が10%上昇',exact:{attackPct:10}}
+  ]},
+  {id:'etna-sd',name:'エトナ SD',mode:'サディスティック',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/エトナ_SD',condition:'アバターの支援Buffが付与された場合。WarAgeでは無効。反射が成立した時の割合を表示し、反射ダメージをアタックDPSへ加算しません。',buffs:[
+   {id:8585,name:'サディスティック',level:0,description:'一定確率で受けた物理ダメージの50%を反射',displayValues:[{name:'反射成立時の割合',value:50,unit:'%'}]}
+  ]},
+  {id:'flonne-sd',name:'フロン SD',mode:'愛フィールド',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/フロン_SD',condition:'アバターの支援Buffが付与された場合。WarAgeでは無効。物理被ダメージ軽減15%は参考表示で、他の軽減効果との合算はしません。',buffs:[
+   {id:8586,name:'愛フィールド',level:0,description:'物理被ダメージを15%軽減（同系統と併用不可）',displayValues:[{name:'物理被ダメージ軽減',value:15,unit:'%'}]}
+  ]},
   {id:'magia-bit',name:'マギアビット',mode:'強化支援',minLevel:30,maxLevel:150,duration:180,firstWins:true,url:url('マギアビット'),buffs:[
    {id:9161,name:'マギア・プロテクト',level:30,group:6767,description:'防御力上昇・被ダメージ軽減',observations:[{fields:['extraAC'],points:[[30,13],[90,25],[150,35]]}],fixed:{extraDamageReducePct:6.25}},
    {id:9163,name:'マギア・エレメント',level:50,group:6766,description:'全属性耐性上昇',observations:[{fields:resist,points:[[90,24],[150,35]]}]},
@@ -21,8 +37,8 @@
   {id:'rafuel',name:'ラフエル',mode:'防御支援',minLevel:60,maxLevel:150,duration:150,url:url('ラフエル'),condition:'ウェントゥス ディフェンシオが飼い主に付与された場合。常時付与を保証するものではありません。',buffs:[
    {id:9135,name:'ウェントゥス ディフェンシオ',level:60,description:'防御力・全属性耐性上昇',observations:[{fields:['extraAC'],points:[[60,24],[150,50]]},{fields:resist,points:[[60,14],[150,30]]}]}
   ]},
-  {id:'yukata-finyu',name:'浴衣フィニュ',mode:'サマー フェスティバル',minLevel:130,maxLevel:150,duration:120,url:url('浴衣フィニュ'),condition:'非戦闘時に特殊行動を指示して付与。現在忠誠84・最大忠誠168以上が目安。数値の実測点はLv150のみです。',buffs:[
-   {id:6576,name:'サマー フェスティバル',level:130,description:'攻撃力・防御力・命中・回避・魔力・最大HP/MP上昇',observations:[{fields:['flatAttack','extraAC','extraHit','extraAvoid','flatMagic'],points:[[150,33]]},{fields:['extraHP','extraMP'],points:[[150,43]]}]}
+  {id:'yukata-finyu',name:'浴衣フィニュ',mode:'サマー フェスティバル',competition:'タキシード犬のアニバーサリー フェスティバルとは併用不可。アニバーサリー フェスティバルを優先します。',minLevel:130,maxLevel:150,duration:120,url:url('浴衣フィニュ'),condition:'非戦闘時に特殊行動を指示して付与。現在忠誠84・最大忠誠168以上が目安。数値の実測点はLv150のみです。',buffs:[
+   {id:6576,name:'サマー フェスティバル',level:130,tags:'pet-festival',description:'攻撃力・防御力・命中・回避・魔力・最大HP/MP上昇',observations:[{fields:['flatAttack','extraAC','extraHit','extraAvoid','flatMagic'],points:[[150,33]]},{fields:['extraHP','extraMP'],points:[[150,43]]}]}
   ]},
   {id:'la-pucelle-avatar',name:'ラ・ピュセル アバター',mode:'サポート',minLevel:0,maxLevel:150,levelIndependent:true,duration:180,url:'https://scrapbox.io/medianmoe/ラ・ピュセル_アバター',buffs:[
    {id:7393,name:'ラ・ピュセル サポート',level:0,description:'攻撃力・防御力上昇',exact:{attackPct:10,extraACPct:10}}
@@ -133,20 +149,21 @@
    if(!Number.isFinite(seconds))pending.push({id:b.id+':duration',name:b.name+'の持続時間',category:'時間未確認',reason:'このレベルの時間の実測値と入力換算が未確認'});
    const times=Number.isFinite(seconds)?[{definitionId:b.id,name:b.name,seconds,conditional:false,estimated:timeEstimated}]:[];
    return {name:pet.name+'：'+b.name,enabled:false,fixed:false,excluded:false,slot:true,...fields,
-    tags:pet.firstWins?'pet-support:'+b.group:'',stackRule:pet.firstWins?'first':'',clientBuffDefinitionId:String(b.id),...(Number.isFinite(seconds)?{durationSeconds:seconds}:{}),
+    tags:b.tags||(pet.firstWins?'pet-support:'+b.group:''),stackRule:pet.firstWins?'first':'',clientBuffDefinitionId:String(b.id),...(Number.isFinite(seconds)?{durationSeconds:seconds}:{}),
     catalogSource:'pet-owner-buff-v1',catalogRuleId:'pet:'+pet.id+':'+b.id,catalogInputs:{petId:pet.id,petLevel:level,petFamily:pet.family||pet.id},
     extraEffects:[{key:'custom',name:b.description,scope:'display',unit:'',note:''}],
-    note:pet.mode+'・Buff付与時の効果／'+(pet.levelIndependent?'レベル非依存':'Lv'+level)+'／'+([...kinds].join('・')||'効果の説明と確認済みの時間を表示')+'。'+(timeEstimated?'持続時間はwiki実測の参考値。':'')+(pet.condition||'')+(pet.firstWins?'同じ競合グループは先に付いたBuffを優先。':'他のBuffとの重複可否は未確認。')+'魔力増減など追加補正なし。',
+    note:pet.mode+'・Buff付与時の効果／'+(pet.levelIndependent?'レベル非依存':'Lv'+level)+'／'+([...kinds].join('・')||'効果の説明と確認済みの時間を表示')+'。'+(timeEstimated?'持続時間はwiki実測の参考値。':'')+(pet.condition||'')+(pet.competition||(pet.firstWins?'同じ競合グループは先に付いたBuffを優先。':'他のBuffとの重複可否は未確認。'))+'魔力増減など追加補正なし。',
     catalogNumeric:{version:1,key:'pet:'+pet.id+':'+b.id,values,pending,applied,estimatedFields,times,inputs:{petId:pet.id,petLevel:level,...(calculated?{petActor:calculated.source,quantityBasis:'client-base-seed10'}:{})}}
    };
   });
  }
- function replace(rows,id,level){
+ function replace(rows,id,level,petSource){
   const pet=catalogs.find(p=>p.id===id),family=pet?.family||id;
   const matches=r=>isPet(r)&&(r.catalogInputs?.petFamily||r.catalogInputs?.petId)===family;
   const first=rows.findIndex(matches),previous=rows.filter(matches);
   const flags=previous.length?{enabled:previous.every(r=>r.enabled),fixed:previous.every(r=>r.fixed),excluded:previous.some(r=>r.excluded)}:{};
-  const next=build(id,level).map(row=>({...row,...flags}));
+  const selectedSource=petSource??(party.canReceive(id)&&previous.length?party.source(previous[0]):'own');
+  const next=party.withSource(build(id,level).map(row=>({...row,...flags})),id,selectedSource);
   const result=rows.filter(r=>!matches(r));
   result.splice(first<0?result.length:Math.min(first,result.length),0,...next);return result;
  }
