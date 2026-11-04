@@ -2,7 +2,8 @@
  const common=typeof module!=='undefined'&&module.exports;
  const sources=[common?require('../data/generated/equipmentAdditions20261013.generated.js'):root.MOE_EQUIPMENT_ADDITIONS_20261013,
   common?require('../data/generated/catalogUpdate20261020.generated.js'):root.MOE_CATALOG_UPDATE_20261020,
-  common?require('../data/generated/catalogUpdate20261027.generated.js'):root.MOE_CATALOG_UPDATE_20261027].filter(Boolean);
+  common?require('../data/generated/catalogUpdate20261027.generated.js'):root.MOE_CATALOG_UPDATE_20261027,
+  common?require('../data/generated/catalogUpdate20261104.generated.js'):root.MOE_CATALOG_UPDATE_20261104].filter(Boolean);
  const data={records:sources.flatMap(source=>source.records)};
  const records=new Map(data.records.map(r=>[r.id,r])),f=Math.fround;
  const id=row=>Number(row.clientBuffDefinitionId||String(row.catalogRuleId||'').replace(/^technic-/,''));
@@ -48,6 +49,10 @@
   const before=f(baseHit),addition=f(f(magic)*rate),after=rate?f(before+f(magic)*rate):baseHit;
   return {before,rate,addition,after,scope:'有効な装備Buffの魔力→命中加算。不可視認識・射程・サーバーの最終命中判定は含まない。'};
  }
- const api=Object.freeze({gate,collect,incomingElement,incomingFire,incomingWater,magicToHit,records:data.records});
+ function mainAttackSources(rows,world=0){
+  const seen=new Set();return (rows||[]).flatMap(row=>{const d=records.get(id(row));if(!d||row.enabled===false||row.excluded||seen.has(d.id))return [];seen.add(d.id);
+   return d.effects.filter(e=>e.kind===108&&!(+world===1&&(e.flags&0x300)===0x100)).map(e=>({name:d.name,percent:100-e.value,skill:'全武器',kind:'attack',excludeUnarmed:false}));});
+ }
+ const api=Object.freeze({mainAttackSources,gate,collect,incomingElement,incomingFire,incomingWater,magicToHit,records:data.records});
  if(common)module.exports=api;else root.MOE_EQUIPMENT_BUFF_NUMERICS=api;
 })(globalThis);

@@ -10930,7 +10930,7 @@ function optimizerTargetOverViolations(m, settings) {
 // Sources are collected after ordinary Buff conflicts are resolved. Since10/27,
 // eligible main-attack shortening uses the largest reduction, including unarmed.
 function attackDelayBSourcesFromResolvedState(st) {
-  const sources = [];
+  const sources = window.MOE_EQUIPMENT_BUFF_NUMERICS?.mainAttackSources(st.composite || []) || [];
   const skills = ["素手", "刀剣", "こんぼう", "槍", "弓", "銃器", "投げ"];
   for (const row of st.composite || []) {
     if (!row.enabled || row.excluded) continue;
@@ -12169,7 +12169,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-pet-party-20261103`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261104`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");

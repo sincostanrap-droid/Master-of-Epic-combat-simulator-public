@@ -1,6 +1,6 @@
 {
   ".nojekyll": "fc38a7d8f060fa6f5f648b19b8c279809c4901b4a4c77fd4f22984c60cf38826",
-  "index.html": "8bd502d8843313d55813d254fdaa663fd7503d784fb633638cb0c4b6ab10c3ee",
+  "index.html": "ccd6f4e1cc34c2b1fe409db86faf0c13ad9c2723c98d40291e1052f6ec4ce125",
   "src/calc/additionalTechniqueDamage.js": "dc1e67a2b8544817a08d93670b54e9c374627435fd48675e5167314d2c1b8167",
   "src/calc/attackFollowups.js": "ca2033789c68c279a29bd82c74c37dd1d5e8c85e3c7c06a38edce776eb4f08e8",
   "src/calc/buffNumericRegistration.js": "a70bc6343a998736491f33a42d801ea470241ca252f07bf9d7e12d830a0a27cd",
@@ -48,7 +48,7 @@
   "src/calc/core.js": "f6f6f7b139e0981d17c1207b08d30841baba257b14151f252bbb5478cf043bea",
   "src/calc/damagePrediction.js": "1c974ad0b6a6a0bb25b9ec62b80676a5bb686e5f266e7d65b51db29fadef8f46",
   "src/calc/effectTiming.js": "b2c519d0cb234ce7b008ce9c91296ac07a5cb98e4d5083d74a788c8d5b249eaf",
-  "src/calc/equipmentBuffNumerics.js": "198924af5aeda2027a7662b119160cc307f0bbc831231688a688446f3c1d8ff3",
+  "src/calc/equipmentBuffNumerics.js": "03e51d4c003e594de36c09896f738f12f8b4ddb2d5d2bbd8be714c81e822ae93",
   "src/calc/orderedStats.js": "c90d1e3ee3efec75ef3a5fd851d65a8a1cf2cf2a636d40d2c58cdd5bdd1e99b7",
   "src/calc/petBuffFormulas.js": "e8b102a7dccb7bbece8e881b014ef6de3d00fc4e82b3d5f7d0188568fcedd299",
   "src/calc/samuraiHeartCombat.js": "8fbde1f4c11526f56df7de376e53534b6610a26ee07f2ae3ad386ad9c9002b27",
@@ -180,7 +180,7 @@
   "src/data/skillSimKnowledge.js": "c124769c98222eabae5dd248d614653c2be8c18dc9c16e0668d5d1a6baa804c6",
   "src/domain/attackDpsState.js": "43b0cd86297019c10530637af798748f66a848959bd9cd550f42eb21d7117cb1",
   "src/domain/buffDurations.js": "72ed1cd9b5002fb0129e20b3a55ea756758b12487e7aef4cea8840e01f9d2841",
-  "src/domain/catalogData.js": "f7bbfdac24d9f8af0b10ff024fce42d0e80da30268c1b2a59cc58f53623f9718",
+  "src/domain/catalogData.js": "ed4549950078737d5aa42c830ad57d8ad2f9e417e7388f990b2619881d8ee8bd",
   "src/domain/catalogSearch.js": "a1e6e9453d0851cd31d561b58abed52f749c8e0a9e8786be3f14b3790684008f",
   "src/domain/catalogSort.js": "f21acd27fe830d01e5dd1917d0bc6ea5020311f65e87b941352d4952bfe71a0c",
   "src/domain/combatLogParser.js": "11895d8eb5eaee0359f191a18f50dd8ffdd2ac8f518183e0a9bed4a91d344970",
@@ -192,7 +192,7 @@
   "src/domain/petParty.js": "e5eb59d445f1f959547d1e5813c6903247b3877898018f51f18e8a57589e302a",
   "src/domain/targetPresets.js": "199c1d67d87ca76666c9bb2328ec7a5af78bc040eff8ae0512a8da7f10c99c9f",
   "src/domain/wikiPlayerCatalog.js": "46555d34680289a033657e26b3e1b1041d4051a89be672efccd48c1a5ec09f61",
-  "src/main.js": "d3d4abf479cac41db4d0efca9ca2eaea22553247d986bbd1113b386dd0019208",
+  "src/main.js": "df79f5623c67626dfefe9e62fe4804ca8841322428deec25b0426c2d7e4ed801",
   "src/optimizer-v2/branchAndBound.js": "263e70c5b56f83f421890555ca13013e51fced86b90359d1dd9eee4e3d1fe366",
   "src/optimizer-v2/candidates.js": "10b3129d619d7c5467c27a3be2762e2ca6536b15d25659a9fbf13a309248e545",
   "src/optimizer-v2/effectiveCandidates.js": "87c71a89d12c110f7ee9b4196f8c1cfbf4072d8f87b970ea259c28370d6c4c2b",
@@ -203,7 +203,7 @@
   "src/optimizer-v2/petGrowth.js": "7117cac88c96a687b01076d699575d1b6ec3e1ecea51f58b2d9f72e6975390c1",
   "src/optimizer-v2/searchContext.js": "b95c508dcabe1d90a7be9ae93c25ebf3f2cd3701128d2e5997a7b453e383e80c",
   "src/optimizer/core.js": "bd8f831c42c84b1615dbc9f0eae8f35f793611e955ca57cdef870a9be594f0a4",
-  "src/optimizer/optimizer.worker.js": "dfcf6fe4744f5f064cee18e31dee096025faf1ceeaaf88327ab7079b7de88fbb",
+  "src/optimizer/optimizer.worker.js": "df96b122a851edfb9d08f796c2cfcd7a128de943b4e7142db6a4c016fb442eb8",
   "src/storage/importExport.js": "5177ce3c601a19642b6e239d0f24296f9647d2bc8b8d721482d5b9ec2947c303",
   "src/storage/shareUrl.js": "8352498baa0d33b058047d8b9327c970b9fe59d2ccec0c41769626176b636c65",
   "src/ui/appVersionBadge.js": "0b5eaf6a3ce95858dfc743b81e8cfdda3dc392095f8bb315c5c7d094dbaeb3cf",
@@ -236,5 +236,6 @@
   "styles/catalogWorkspace.css": "2a97821155089b81977f767e413a8d7408575632e453f1524063a1ae7b9082e1",
   "styles/combatTrial.css": "20df26e5973eab0ccd7fa0ab49a5e663366116b216b4f10d1138ed162b1ba8b8",
   "styles/main.css": "de68c6f2a35377fdbf3205409e974ddc59b12ce81ad42f57a7316c0a2545ace6",
-  "styles/settingsCompact.css": "55022cd610d04257719c37db559e9e50cecd9cbc4861d2e8942c49d858344ddb"
+  "styles/settingsCompact.css": "55022cd610d04257719c37db559e9e50cecd9cbc4861d2e8942c49d858344ddb",
+  "src/data/generated/catalogUpdate20261104.generated.js": "80ccf4553a5053c3d3644d0c646495554dc506f89304ee4755d6a9a63b4568e8"
 }

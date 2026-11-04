@@ -282,3 +282,5 @@ tests/petBuffExpansion.test.cjs
 src/domain/petParty.js
 tests/petPartyLimit.test.cjs
 tests/petBuffAdditionalSupport.test.cjs
+src/data/generated/catalogUpdate20261104.generated.js
+tests/catalogUpdate20261104.test.cjs

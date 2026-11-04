@@ -8,7 +8,7 @@
 // Legacy calculation/catalog scripts use window for data globals only.
 // No document or DOM shim is provided: UI initializers must stay guarded.
 self.window = self;
-importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../data/generated/catalogUpdate20261020.generated.js?v=20261020-raid', '../data/generated/catalogUpdate20261027.generated.js?v=20261027', '../calc/equipmentBuffNumerics.js?v=20261027', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
+importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../data/generated/catalogUpdate20261020.generated.js?v=20261020-raid', '../data/generated/catalogUpdate20261027.generated.js?v=20261027', '../data/generated/catalogUpdate20261104.generated.js?v=20261104', '../calc/equipmentBuffNumerics.js?v=20261104', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
 
 importScripts(
   "../calc/clientWeaponReference.js?v=20261006-product-formulas",
