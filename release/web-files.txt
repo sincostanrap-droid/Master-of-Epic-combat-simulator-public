@@ -237,3 +237,4 @@ styles/main.css
 styles/settingsCompact.css
 src/domain/petParty.js
 src/data/generated/catalogUpdate20261104.generated.js
+src/data/generated/catalogUpdate20261110.generated.js

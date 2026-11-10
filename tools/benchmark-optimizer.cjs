@@ -42,12 +42,12 @@ function context(repo=root, {worker=false, data=true, catalog=false}={}) {
   load('src/calc/combatResourceFormula.js');
   load('src/data/generated/equipmentAdditions20261013.generated.js');
   load('src/data/generated/catalogUpdate20261020.generated.js');
-  load('src/data/generated/catalogUpdate20261027.generated.js');load('src/data/generated/catalogUpdate20261104.generated.js');
+  load('src/data/generated/catalogUpdate20261027.generated.js');load('src/data/generated/catalogUpdate20261104.generated.js');load('src/data/generated/catalogUpdate20261110.generated.js');
   load('src/calc/equipmentBuffNumerics.js');
   if (catalog) {
     for (const f of ['src/data/generated/equipmentCatalog.generated.js', 'src/data/generated/buffCatalog.generated.js', 'src/ui/catalogResults.js']) load(f);
   }
-  if(catalog){load('src/data/generated/equipmentAdditions20261013.generated.js');load('src/data/generated/catalogUpdate20261020.generated.js');load('src/data/generated/catalogUpdate20261027.generated.js');load('src/data/generated/catalogUpdate20261104.generated.js');}
+  if(catalog){load('src/data/generated/equipmentAdditions20261013.generated.js');load('src/data/generated/catalogUpdate20261020.generated.js');load('src/data/generated/catalogUpdate20261027.generated.js');load('src/data/generated/catalogUpdate20261104.generated.js');load('src/data/generated/catalogUpdate20261110.generated.js');}
   return ctx;
 }
 function fixture(ctx, mode='synthetic') {

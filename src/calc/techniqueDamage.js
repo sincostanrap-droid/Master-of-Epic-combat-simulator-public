@@ -86,6 +86,7 @@
       const effects=[];
       for(const e of row.extraEffects||[]) {
         if(e.key==='skillPlus'&&e.name===entry.skillName)effects.push({kind:235,selector:entry.definition.primary_runtime??entry.definition.primary_raw,value:number(e.value),flags:48});
+        if(e.key==='custom'&&e.name===entry.skillName+'命中用技能')effects.push({kind:167,selector:entry.definition.primary_runtime??entry.definition.primary_raw,value:number(e.value),flags:48});
         if(e.key==='elementDamagePct'&&e.name===elementNames[entry.definition.element]+'属性')elementPct=f(elementPct+number(e.value));
         if(e.key==='elementDamagePct'&&e.name===elementNames[entry.additional?.element]+'属性')additionalElementPct=f(additionalElementPct+number(e.value));
         if(e.key==='custom'&&e.name==='魔法与ダメージ'&&e.unit==='%')magicPct=f(magicPct+number(e.value));

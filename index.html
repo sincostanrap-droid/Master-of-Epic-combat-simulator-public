@@ -1401,7 +1401,7 @@ MoE固有の主な仮定:
   <p class="small">
     NPCに付与されるBuff・Debuff・DoT・状態異常・行動制限を、共通の8枠として管理します。
     「対象AC増減」「対象回避増減」は各対象値へ加算されます。低下は負の値で入力してください。
-    「被ダメージ倍率%」は既存の外枠補正と同じ位置で乗算されます。
+    「被ダメージ倍率%」は、登録した増加量の最大値を1回だけ適用します（11/10更新）。負の値はこの増加効果には適用しません。
   </p>
 
   <div class="npcEffectInputRow">
@@ -1694,8 +1694,9 @@ MoE固有の主な仮定:
 <script src="./src/data/generated/catalogUpdate20261020.generated.js?v=20261020-raid" defer></script>
 <script src="./src/data/generated/catalogUpdate20261027.generated.js?v=20261027" defer></script>
 <script src="./src/data/generated/catalogUpdate20261104.generated.js?v=20261104" defer></script>
-<script src="./src/calc/equipmentBuffNumerics.js?v=20261104" defer></script>
-<script src="./src/calc/techniqueDamage.js?v=20261018-final-display" defer></script>
+<script src="./src/data/generated/catalogUpdate20261110.generated.js?v=20261110" defer></script>
+<script src="./src/calc/equipmentBuffNumerics.js?v=20261110" defer></script>
+<script src="./src/calc/techniqueDamage.js?v=20261110" defer></script>
 <script src="./src/ui/attackTechniqueControls.js?v=20261018-final-display" defer></script>
 <script src="./src/calc/core.js?v=20261103-pet-party" defer></script>
 <script src="./src/calc/clientNativeBuffSlotReference.js?v=20261010-combat2" defer></script>
@@ -1724,7 +1725,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/idbImportPreview.js?v=1.24.4" defer></script>
-<script src="./src/domain/catalogData.js?v=20261104" defer></script>
+<script src="./src/domain/catalogData.js?v=20261110" defer></script>
 <script src="./src/domain/catalogSearch.js?v=20261009-weapon-procs" defer></script>
 <script src="./src/domain/equipmentEffectFacets.js?v=20261003-pet-search" defer></script>
 <script src="./src/domain/equipmentEffectFacetCatalog.js?v=20261007-weapon-destination" defer></script>
@@ -1744,7 +1745,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/petBuffFormulas.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/domain/petBuffCatalog.js?v=20261103-pet-gremlin" defer></script>
 <script src="./src/ui/petBuffCatalog.js?v=20261103-pet-expansion2" defer></script>
-<script src="./src/main.js?v=20261104" defer></script>
+<script src="./src/main.js?v=20261110" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>

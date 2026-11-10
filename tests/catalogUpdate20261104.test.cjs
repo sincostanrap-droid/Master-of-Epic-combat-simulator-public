@@ -14,7 +14,7 @@ for(const worker of [false,true]){
  const items=p.equipmentCatalogItems();
  eq(p.MOE_EQUIPMENT_CATALOG_META.gameUpdateDate,'2026-11-04');eq(p.MOE_EQUIPMENT_CATALOG_META.equipmentCount,p.MOE_EQUIPMENT_CATALOG_GENERATED.length);
  for(const id of [23535,23536,23540,23541,23479])eq(items.filter(r=>r.officialId===id).length,1);
- for(const id of [23537,23538,23539])eq(items.filter(r=>r.officialId===id).length,0);
+ for(const id of [23537,23538,23539])eq(data.equipment.filter(r=>r.officialId===id).length,0);
  const row=id=>json(p.catalogEquipmentToRow(items.find(r=>r.officialId===id)));
  const arms=row(23535),urn=row(23536),brow=row(23540),horn=row(23541),weapon=row(23479);
  eq([arms.slot,urn.slot,brow.slot,horn.slot],['装飾: 背中','装飾: 腰','装飾: 顔','装飾: 頭']);

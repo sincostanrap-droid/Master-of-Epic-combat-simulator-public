@@ -12169,7 +12169,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261104`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261110`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -17698,9 +17698,9 @@ if (typeof document !== "undefined") {
   function acDelta() { return sumByCalcType("acFlat"); }
   function evasionDelta() { return sumByCalcType("evasionFlat"); }
   function damageTakenMultiplier() {
-    return effects
-      .filter(item => item.calcType === "damageTakenPct")
-      .reduce((multiplier, item) => multiplier * Math.max(0, 1 + (+item.value || 0) / 100), 1);
+    // 2026/11/10: admitted kind232 uses the largest positive increase.
+    const values = effects.filter(item => item.calcType === "damageTakenPct").map(item => +item.value || 0);
+    return 1 + Math.max(0, ...values) / 100;
   }
   function critTakenPct() { return sumByCalcType("critTakenPct"); }
   function resistDelta() { return sumByCalcType("resistFlat"); }
