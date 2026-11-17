@@ -7245,8 +7245,16 @@ function splitTags(value) {
 /* タグ入力セル。タグ変更時は競合グループ管理表示と保存内容を更新する。 */
 
 /* 競合グループ名。複数書かれている場合、v1では先頭グループを重複判定に使う。 */
+function activeBuffGroupTags(row) {
+  // Keep legacy saved tags intact; racial effects now coexist and use a maximum.
+  return splitTags(row.tags).filter(tag => tag.toLowerCase() !== "special:latest");
+}
 function buffGroupName(row) {
-  return splitTags(row.tags)[0] || row.autoStackGroup || (["6576","13726"].includes(String(row.clientBuffDefinitionId)) ? "pet-festival" : "");
+  const auto = String(row.autoStackGroup || "");
+  const legacy = splitTags(row.tags).some(tag => tag.toLowerCase() === "special:latest") || auto.toLowerCase() === "special:latest";
+  return activeBuffGroupTags(row)[0] || (auto.toLowerCase() !== "special:latest" ? auto : "") ||
+    (legacy && row.clientBuffDefinitionId ? "__technic-" + row.clientBuffDefinitionId : "") ||
+    (["6576","13726"].includes(String(row.clientBuffDefinitionId)) ? "pet-festival" : "");
 }
 
 /* 同一競合グループ内で代表を選ぶための暫定スコア。
@@ -7411,7 +7419,7 @@ function resolveAllBuffRowsForGroups(st) {
   // rejected in one group cannot suppress another Buff in a different group.
   const candidates = collectActiveBuffConflictCandidates(out);
   const groupKeys = candidate => Array.from(new Set([
-    candidate.group, ...splitTags(candidate.row.tags)
+    candidate.group, ...activeBuffGroupTags(candidate.row)
   ].filter(Boolean).map(group => group.toLowerCase())));
   const accepted = new Map();
   const suppressed = new Set();
@@ -7598,7 +7606,7 @@ function buildConflictMonitorGroups() {
   normalizeEquipmentRows(state.equipment).forEach(row => {
     if (!(row.enabled === false && row.equipBuffEnabled && equipmentBuffHasEffect(row))) return;
     const candidate = equipmentBuffMonitorCandidate(row, monitorOrder++);
-    const groups = splitTags(candidate.tags);
+    const groups = activeBuffGroupTags(candidate);
     groups.forEach(group => {
       const rec = ensure(group);
       rec.candidates.push({...candidate, _monitorGroup: group});
@@ -7609,7 +7617,7 @@ function buildConflictMonitorGroups() {
 
   normalizeCompositeRows(state.composite).forEach((row, idx) => {
     if (row.enabled || row.excluded || !compositeHasEffect(row)) return;
-    splitTags(row.tags).forEach(group => {
+    activeBuffGroupTags(row).forEach(group => {
       const rec = ensure(group);
       rec.candidates.push({
         type:"composite", idx, row, group,
@@ -7628,7 +7636,7 @@ function buildConflictMonitorGroups() {
 
   (state.post || []).forEach((row, idx) => {
     if (row.enabled || row.excluded) return;
-    splitTags(row.tags).forEach(group => {
+    activeBuffGroupTags(row).forEach(group => {
       const rec = ensure(group);
       rec.candidates.push({
         type:"post", idx, row, group,
@@ -7647,7 +7655,7 @@ function buildConflictMonitorGroups() {
 
   [].forEach((row, idx) => {
     if (row.enabled || row.excluded) return;
-    splitTags(row.tags).forEach(group => {
+    activeBuffGroupTags(row).forEach(group => {
       const rec = ensure(group);
       rec.candidates.push({
         type:"other", idx, row, group,

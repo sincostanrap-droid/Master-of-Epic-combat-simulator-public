@@ -386,7 +386,8 @@
   // These saved producers consume B/M/A, independently of dispatch gating.
   // Expose the conditional amount, keeping the unknown eligibility as partial.
   if(unknownConditions.length&&![1,2,3,5,8,9,11,12,13,18,19,23,27,31,32,38,41,42,43,44,45,49,57,71,78,80,82,83,85,87,89,92,93,94,101,107,112,113,114,115,120,122,123,124,127,130,132,142,147,169,170,171,173,177,180,184,190,200,201,210,213,217,232,237,239,250,251,256,260,269].includes(e.kind))return fail(unknownConditions.join(' / '));
-  const a=!!(e.flags&0x100),b=!!(e.flags&0x200),night=!!(e.flags&0x400),day=!!(e.flags&0x800);
+  const reaction=[241,242].includes(e.kind);
+  const a=!!(e.flags&0x100),b=!!(e.flags&0x200),night=!reaction&&!!(e.flags&0x400),day=!reaction&&!!(e.flags&0x800);
   if(night!==day&&!['day','night'].includes(p.timePeriod))return {...fail('ゲーム内の昼/夜を指定してください'),category:'入力不足'};
   const active=!(a!==b&&(a&&p.world===1||b&&p.world!==1))&&!(night!==day&&(night&&p.timePeriod==='day'||day&&p.timePeriod==='night'));
   const ok=(value,unit,evidence,extra={})=>({...base,supported:true,active,value,unit,modeInfo,evidence:[...evidence,...(d.effect_class===3||d.flags&0x4000000||e.kind===173?['docs/client-numeric-gaps5-20261011.txt']:[])],category:null,reason:null,...extra,
@@ -663,7 +664,15 @@
     return {...semantic('装備解除要求。'+choice+'。対象PCの解除可能な装備・収納先がある条件で1枠を解除する。B/M/Aの数量演算なし。装備性能の減算値とは別'),equipmentRemoval:{selector,slot:selector>0&&selector<19?selector-1:null,priority:selector===19?[11,12]:null},evidence:['docs/client-numeric-gaps9-20261011.txt']};
    }
    if([241,242].includes(e.kind)){
-    const q=extensions.reactionRequest(e.value,p.random15),child=extensions.reactionDefs[e.selector];let reactionChild=null;
+    const firstSelf=d.effects.find(v=>v.kind===241);
+    if(e.kind===242&&firstSelf?.flags&4096)return fail('先行する自分向け反応の対象状態が未指定です');
+    const sequence=extensions.reactionSequence([{effects:d.effects}],{world:p.world,
+     draws:p.reactionDraws||[p.random15,p.reactionNextRandom15]});
+    const candidate=sequence.candidates.find(c=>c.effectIndex===d.effects.indexOf(e));
+    const q={...extensions.reactionRequest(e.value,p.random15),draw:candidate?.gate?.draw??null,
+     uniformPercent:candidate?.independentUniformPercent||0,
+     passed:candidate?candidate.requested:false,sequence};
+    const child=extensions.reactionDefs[e.selector];let reactionChild=null;
     if(child){
      const cp={...p,reactionDefinitionId:child.id},childRow={...row,internalId:child.id};
      const childEffects=child.effects.map(ce=>effect(child,ce,childRow,cp,names,math));
@@ -677,13 +686,13 @@
     // this total; a periodic child or ability modifier is never a per-hit HP sum.
     const requests=reactionChild?.effects.filter(v=>v.supported&&!v.conditionalEligibility&&[1,2,5,82,83].includes(v.kind)&&v.modeInfo?.initial!==false&&Number.isFinite(v.value)).map(v=>({
      name:v.name,resource:v.unit,recipient:v.recipient,whenSelected:v.value,
-     specifiedDraw:p.reactionSelected===true?(active&&q.passed?v.value:0):null,
+     specifiedDraw:p.reactionSelected===true?(!active||q.passed===false?0:q.passed===true?v.value:null):null,
      conditionalUniformMean:active?v.value*q.uniformPercent/100:0}))||[];
-    return ok(active?q.uniformPercent:0,'%',['docs/client-numeric-gaps7-20261011.txt'],{name:'被攻撃時の子要求・一次抽選率（15bit均等時）',reactionGate:q,reactionChild,partial:true,
-     reactionOpportunity:{requests,scope:'最初の適合反応に選ばれた被攻撃1機会、子の受理を仮定した初回資源要求だけ。指定乱数の値と15bit均等の条件付き平均を区別。成否率・自動総量・最終HP増減ではない'},
+    return ok(active?q.uniformPercent:0,'%',['docs/client-numeric-gaps7-20261011.txt'],{name:'被攻撃時の子要求率（15bit均等・独立仮定）',reactionGate:q,reactionChild,partial:true,
+     reactionOpportunity:{requests,scope:'先行Buffが全て不発で、このBuffの抽選に到達した被攻撃1機会。子の受理を仮定した初回資源要求だけ。指定乱数と、各抽選が15bit均等かつ独立と仮定した平均を区別。成否率・自動総量・最終HP増減ではない'},
      reactionSelected:p.reactionSelected===true,reactionRequested:p.reactionSelected===true?active&&q.passed:null,
-     scope:'物理被害後の反応処理が有効で、最初の適合Buffに選ばれた1機会。kind241は保持者へ、242は攻撃した相手へ。241を優先して1個を選び、抽選不通過後に次のBuffを抽選しない',
-     remaining:(child?'親の有効期間に受ける攻撃回数・最初に選ばれるBuff・子の受理/更新は条件付き。子の局所値を親の自動合計へ掛算しない':'子定義 '+e.selector+' が未照合')+(reactionChild?.effects.some(v=>!v.supported&&!v.resolved||v.partial)?'。子に未解明の作用あり':'')});
+     scope:'物理被害後の反応処理が有効で、このBuffの抽選まで到達した1機会。古いBuffから調べ、同じBuff内では自分向け、攻撃した相手向けの順に抽選する。不発なら次へ進み、子要求を1回出すと終了する。同種の効果はBuff内の先頭1件だけを使う',
+     remaining:(child?'先行Buffが全て不発という条件付き。実際のBuff順・抽選間の独立性・親の有効期間に受ける攻撃回数・子の受理/更新は未確定。子の局所値を親の自動合計へ掛算しない':'子定義 '+e.selector+' が未照合')+(reactionChild?.effects.some(v=>!v.supported&&!v.resolved||v.partial)?'。子に未解明の作用あり':'')});
    }
    if(e.kind===224&&extensions.guardInputs.guards[d.id]?.selector===7&&extensions.guardInputs.guards[d.id].child===e.selector)
     return {...semantic('kind115の追加種類7が使う子定義 '+e.selector+' の参照指定。子の条件付き計算をkind115行へ表示する。同じ子をこの行で重複発動・加算しない'),evidence:['docs/client-numeric-gaps9-20261011.txt']};

@@ -194,13 +194,15 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
   const dmgMultiplier = Math.max(0, 1 + dmgBonusSum);
   const targetRace = normalizeTargetRaceKey(inputs.targetRace || "");
   const weaponSpecial = globalThis.MOE_TECHNIQUE_DAMAGE?.weaponSpecial(selectedWeapon,targetRace) || null;
-  const specialMultiplier = (st.special || [])
+  const matchingSpecials = (st.special || [])
     .filter(r => r.enabled && !r.excluded)
     .filter(r => {
       const target = normalizeTargetRaceKey(r.target || r.targetRace || "");
       return !target || (targetRace && target === targetRace);
     })
-    .reduce((p, r) => p * (+r.value || 1), 1);
+    .map(r => Number.isFinite(+r.value) ? +r.value : 1);
+  // 2026-11-17: all matching racial Buff effects contribute to one maximum.
+  const specialMultiplier = matchingSpecials.length ? Math.max(...matchingSpecials) : 1;
 
   let criticalRate = 0;
   let critAvg = 1;

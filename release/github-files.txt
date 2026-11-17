@@ -288,3 +288,4 @@ src/data/generated/catalogUpdate20261110.generated.js
 tests/catalogUpdate20261110.test.cjs
 src/data/generated/catalogUpdate20261117.generated.js
 tests/catalogUpdate20261117.test.cjs
+tests/combatUpdate20261117.test.cjs

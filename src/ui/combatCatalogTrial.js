@@ -534,6 +534,7 @@
    p.physicalCategoryMatched=el('PhysicalCategory').value===''?undefined:el('PhysicalCategory').value==='yes';
    p.buffActionSkill=condition('BuffActionSkill');p.buffHitBefore=condition('BuffHitBefore');p.protectionDistance=condition('ProtectionDistance');
    p.reactionSelected=el('ReactionSelected').checked;
+   p.reactionNextRandom15=condition('ReactionNextRandom15');
    p.reactionLastAcceptedSeconds=condition('ReactionLastAcceptedSeconds');
    p.referenceSimultaneous=el('ReferenceSimultaneous').checked;
    p.referenceReceiptOrder=el('ReferenceReceiptOrder').value;
@@ -694,8 +695,8 @@
       if(q.mean!=null)lines.push('  指定31bit値の1回要求 '+fmt(q.amount)+' / 31bit全整数が均等の場合の平均 '+fmt(q.mean)+'（最終HPの平均ではありません）');}
      if(r.buffReflection){const q=r.buffReflection;lines.push('  反射率 '+fmt(q.reflectRate*100)+'% / 軽減率 '+fmt(q.reduceRate*100)+'%（保持倍率を反映、別々に上限100%）');
       if(q.outcome){const v=q.outcome;lines.push('  処理前損傷 '+fmt(v.before)+' / 相手への反射要求 '+fmt(v.reflectRequest)+'HP / 切上げ軽減要求 '+fmt(v.reductionRequest)+'HP / 軽減後の本体要求 '+fmt(v.remaining)+'HP（最終HPと別）');}}
-     if(r.reactionGate){lines.push('  指定15bit値：'+(r.reactionRequested===null?'反応候補の選択条件が未指定':r.reactionRequested?'子を1回要求':'子を要求しない')+'。技自体の成功率とは別');
-      for(const q of r.reactionOpportunity?.requests||[])lines.push('  反応1機会：'+q.name+' / 抽選通過・受理時 '+fmt(q.whenSelected)+q.resource+' / 指定乱数 '+(q.specifiedDraw==null?'候補選択条件未指定':fmt(q.specifiedDraw)+q.resource)+' / 15bit均等の条件付き要求平均 '+fmt(q.conditionalUniformMean)+q.resource+'（子受理を仮定。最終結果・全期間総量とは別）');
+     if(r.reactionGate){lines.push('  指定15bit値：'+(r.reactionRequested===null?'到達条件または次の抽選値が未指定':r.reactionRequested?'子を1回要求':'子を要求しない')+'。技自体の成功率とは別');
+      for(const q of r.reactionOpportunity?.requests||[])lines.push('  反応1機会：'+q.name+' / 抽選通過・受理時 '+fmt(q.whenSelected)+q.resource+' / 指定乱数 '+(q.specifiedDraw==null?'到達条件または抽選値未指定':fmt(q.specifiedDraw)+q.resource)+' / 15bit均等・独立仮定の条件付き要求平均 '+fmt(q.conditionalUniformMean)+q.resource+'（子受理を仮定。最終結果・全期間総量とは別）');
       const c=r.reactionChild;if(c){lines.push('  反応子 '+c.name+' → '+c.recipient+' / 受理1回の持続指定 '+fmt(c.durationSeconds)+'秒。'+c.scope);
        for(const e of c.effects){lines.push('    '+e.name+'：'+(e.supported?fmt(e.value)+e.unit:e.resolved?'数量なし：'+e.meaning:'計算未対応：'+(e.reason||e.remaining))+(e.partial?'（部分対応）':''));
         if(e.critical?.after!=null)lines.push('      条件付きクリティカル割合 '+fmt(e.critical.before*100)+' → '+fmt(e.critical.after*100)+'% / 剰余均等時 '+fmt(e.critical.uniformResiduePercent)+'%');}}}

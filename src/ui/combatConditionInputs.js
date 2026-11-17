@@ -45,7 +45,7 @@
    269:['DamageReactionBranch','ReceivedHpAmount'],
   };
   for(const kind of kinds)add(...byKind[kind]||[]);
-  if(has(241,242))add('ReactionSelected','ReactionLastAcceptedSeconds');
+  if(has(241,242))add('ReactionSelected','ReactionNextRandom15','ReactionLastAcceptedSeconds');
   if(has(123))add('InterruptCondition','InterruptNpcProfile','InterruptNpcLevel','InterruptNpcRandom15');
   if(has(28)&&effects.some(e=>e.kind===28&&e.selector===7))add('PetSpecialReady');
   if(effects.some(e=>e.kind===28&&e.selector===10))add('PetLevel');

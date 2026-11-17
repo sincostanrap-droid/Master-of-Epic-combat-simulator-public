@@ -42,6 +42,29 @@
   const passing=clamp(Math.floor(threshold/scale)+1,0,32768);
   return {threshold,draw,passed:draw<=threshold,uniformPercent:passing/32768*100};
  }
+ // Ordered admitted Buffs, oldest first. A request stops the scan regardless
+ // of downstream acceptance. Probabilities below explicitly assume independent
+ // uniform 15-bit draws; observed RNG independence is not claimed.
+ function reactionSequence(rows,{world=0,marked=false,draws=[]}={}){
+  const candidates=[];let survival=1,selected=null,known=true,used=0;
+  for(let rowIndex=0;rowIndex<rows.length;rowIndex++){
+   const row=rows[rowIndex];if(!row||row.disabled)continue;
+   for(const kind of [241,242]){
+    const effectIndex=(row.effects||[]).findIndex(e=>e.kind===kind);if(effectIndex<0)continue;
+    const e=row.effects[effectIndex],flags=e.flags||0,a=!!(flags&256),b=!!(flags&512);
+    if(a!==b&&(a&&world===1||b&&world!==1)||flags&4096&&!marked)continue;
+    const rate=reactionRequest(e.value,0).uniformPercent,independentUniformPercent=survival*rate;
+    survival*=1-rate/100;
+    let gate=null,requested=selected!==null?false:null;
+    if(selected===null&&known){
+     if(draws[used]==null)known=false;
+     else{gate=reactionRequest(e.value,draws[used++]);requested=gate.passed;if(requested)selected=candidates.length;}
+    }
+    candidates.push({rowIndex,effectIndex,kind,selector:e.selector,uniformPercent:rate,independentUniformPercent,gate,requested});
+   }
+  }
+  return {candidates,selected,complete:known,drawsUsed:used,independentUniformNonePercent:survival*100};
+ }
  function omenRequest(base,multiplier,random15,targetFactor=1){
   const threshold=clamp(Math.trunc(f(multiplier)*50),30,90),roll=randomInput(random15)%100;
   const target=roll<threshold,plain=clamp(f(base),-1000,10000);
@@ -586,7 +609,7 @@
    return {supported:!!edges.length,nodes,edges,counts,periodic,refreshes,scope:'全参照要求の対象条件成立・条件不変。flags32は成立した対象関係に限定。連鎖tokenは初回0・子1〜11、各要求が期限内に順番に成立。周期は自己保持の未中断・未更新を仮定'};}
   catch(e){return {supported:false,reason:e.message};}
  }
- const api=Object.freeze({buffReplacement,reactionLifetime,confusionTarget,spiritVisibility,queuedMovementGate,equipmentRestriction,summonSelection,summonLifetime,immediateReferences,conditionalReferences,referenceLifetime,periodicReferenceLifetime,lifetimeModifier,periodicRequests,receiptPeriodicRequests,scalarMetadataIndependent,stateMaskRegistration,cachedParameter,lightSelection,guardDefinitionParameter,equipmentDisplayScale,effectModes,delayFactor,reuseCoefficient,selectedReuse,percentResource,placementInput,directMessage,castingMovementFactor,petRevivePenalty,reviveFractionCache,interruptRequest,interruptOutcome,hpAssignment,resourceAssignment,hitAddition,protectionDistance,mpBurst,thresholdDefense,resourceDefense,guardCalculation,magicGuardGate,magicGuardRefund,magicGuardCalculation,magicGuardInputs,shieldGuardCalculation,shieldFitness,shieldDefs,guards,guardInputs,guardOverride,guardEligibility,guardFeedback,guardContext,buffReflection,buffReflectionRates,buffReflectionDamage,reactionRequest,reactionDefs,omenRequest,sacrificeRequests,equipmentWear,resistantDurationFactor,conditionalHpRequest,stats:data.stats});
+ const api=Object.freeze({buffReplacement,reactionLifetime,confusionTarget,spiritVisibility,queuedMovementGate,equipmentRestriction,summonSelection,summonLifetime,immediateReferences,conditionalReferences,referenceLifetime,periodicReferenceLifetime,lifetimeModifier,periodicRequests,receiptPeriodicRequests,scalarMetadataIndependent,stateMaskRegistration,cachedParameter,lightSelection,guardDefinitionParameter,equipmentDisplayScale,effectModes,delayFactor,reuseCoefficient,selectedReuse,percentResource,placementInput,directMessage,castingMovementFactor,petRevivePenalty,reviveFractionCache,interruptRequest,interruptOutcome,hpAssignment,resourceAssignment,hitAddition,protectionDistance,mpBurst,thresholdDefense,resourceDefense,guardCalculation,magicGuardGate,magicGuardRefund,magicGuardCalculation,magicGuardInputs,shieldGuardCalculation,shieldFitness,shieldDefs,guards,guardInputs,guardOverride,guardEligibility,guardFeedback,guardContext,buffReflection,buffReflectionRates,buffReflectionDamage,reactionRequest,reactionSequence,reactionDefs,omenRequest,sacrificeRequests,equipmentWear,resistantDurationFactor,conditionalHpRequest,stats:data.stats});
  const decodeSummonSelector=raw=>{const runtime=summonSelectors.rawToRuntime[raw];if(runtime==null)throw Error('召喚selectorの保存値→実行時値変換が未確定：'+raw);return runtime;};
  if(common)module.exports=Object.freeze({...api,guardChildren,decodeSummonSelector});else root.MOE_COMBAT_NUMERIC_EXTENSIONS=Object.freeze({...api,guardChildren,decodeSummonSelector});
 })(globalThis);

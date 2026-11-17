@@ -6975,3 +6975,17 @@ window.MOE_DAMAGE_BUFF_COMPATIBILITY_MANUAL = [
       memo: `${previous.memo || ""}\n2026-10-05ディレイ操作監査: ${patch.summary} 旧資料の%表記は、単位まで確認した値としては採用しない。別効果・競合分類は保持。`};
   }
 })();
+
+// 2026-11-17: racial multipliers coexist. Equal Buff IDs still share one group.
+(function(){
+  const rules=window.MOE_BUFF_RULES_MANUAL;
+  for(const rule of Object.values(rules)){
+    if(rule.conflictGroup === 'special:latest'){
+      rule.conflictGroup='technic-'+rule.officialTechnicId;
+      rule.stackRule='same-technic';
+    }
+    if(typeof rule.memo==='string')rule.memo=rule.memo
+      .replace(/特攻系は(?:種別を問わず)?最新1件のみ。/g,'種族特攻は対象に合う倍率の最大値を使用。')
+      .replace('特攻の最新1件選択を変換効果と分けて処理する。','種族特攻の最大値選択を変換効果と分けて処理する。');
+  }
+})();

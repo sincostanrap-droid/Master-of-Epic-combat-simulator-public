@@ -450,7 +450,8 @@ MoE固有の主な仮定:
 <label>防御・反射用31bit乱数（種値とは別）<input id="combatCatalogGuardRandom31" type="number" min="0" max="2147483647" step="1" placeholder="物理反射量・属性反射の一次判定に使用"></label>
 <label>Buff反射・軽減処理に渡る損傷量<input id="combatCatalogBuffReflectionDamage" type="number" min="0" step="any" placeholder="必要時に入力"></label>
 <label class="combatTrialCheck"><input id="combatCatalogBuffReflectionOnly" type="checkbox">このBuffの反射・軽減が適合（他の反射/軽減Buffなし・対象関係と物理行動の許可条件が成立）</label>
-<label class="combatTrialCheck"><input id="combatCatalogReactionSelected" type="checkbox">被攻撃時の反応が有効で、このBuffが最初の適合候補に選ばれた1機会を計算</label>
+<label class="combatTrialCheck"><input id="combatCatalogReactionSelected" type="checkbox">被攻撃時の反応が有効で、先行Buffが全て不発となり、このBuffの抽選に到達した1機会を計算</label>
+  <label>自分向けが不発だった場合の次の抽選値（0〜32767・未指定なら成否未確定）<input id="combatCatalogReactionNextRandom15" type="number" min="0" max="32767" step="1" placeholder="未指定"></label>
 <label>最後に反応子を適用した時刻（親使用から秒・任意）<input id="combatCatalogReactionLastAcceptedSeconds" type="number" min="0" step="0.01" placeholder="未指定"></label>
 <p class="hint">指定した適用時刻以降に更新・解除がない条件で、反応子を含む終了時刻を計算します。自動発動の時刻・回数は仮定しません。</p>
 <label>保護効果の保持者と発生元の距離（座標単位）<input id="combatCatalogProtectionDistance" type="number" min="0" step="any" placeholder="必要時に入力"></label></div><p class="combatTrialHelp">相手の攻撃と盾を選んで軽減量を計算します。「完全軽減」を指定した場合は、盾の性能による計算とは分けて表示します。</p></details>
@@ -1697,9 +1698,9 @@ MoE固有の主な仮定:
 <script src="./src/data/generated/catalogUpdate20261110.generated.js?v=20261110" defer></script>
 <script src="./src/data/generated/catalogUpdate20261117.generated.js?v=20261117" defer></script>
 <script src="./src/calc/equipmentBuffNumerics.js?v=20261117" defer></script>
-<script src="./src/calc/techniqueDamage.js?v=20261110" defer></script>
+<script src="./src/calc/techniqueDamage.js?v=20261117-combat" defer></script>
 <script src="./src/ui/attackTechniqueControls.js?v=20261018-final-display" defer></script>
-<script src="./src/calc/core.js?v=20261103-pet-party" defer></script>
+<script src="./src/calc/core.js?v=20261117-combat" defer></script>
 <script src="./src/calc/clientNativeBuffSlotReference.js?v=20261010-combat2" defer></script>
 <script src="./src/calc/clientStatCacheReference.js?v=20261011-numerics" defer></script>
 <script src="./src/calc/clientNativeBaseConversionReference.js?v=20261011-numerics" defer></script>
@@ -1738,7 +1739,7 @@ MoE固有の主な仮定:
 <script src="./src/ui/catalogResults.js?v=20261007-weapon-destination" defer></script>
 <script src="./src/ui/catalogWorkspace.js?v=20261009-weapon-procs" defer></script>
 <script src="./src/ui/catalogTab.js?v=20261102-runtime-review" defer></script>
-<script src="./src/data/manual/buffRules.manual.js?v=20261008-attack-special-2" data-catalog-src="src/data/manual/buffRules.manual.js"></script>
+<script src="./src/data/manual/buffRules.manual.js?v=20261117-combat" data-catalog-src="src/data/manual/buffRules.manual.js"></script>
 <script src="./src/ui/settingsCompact.js?v=20260928" defer></script>
 <script src="./src/data/generated/catalogEffectNames.generated.js?v=20261017-quantity-only-warnings" defer></script>
 <script src="./src/ui/effectDisplayText.js?v=20261017-quantity-only-warnings" defer></script>
@@ -1746,7 +1747,7 @@ MoE固有の主な仮定:
 <script src="./src/calc/petBuffFormulas.js?v=20261102-pet-formulas" defer></script>
 <script src="./src/domain/petBuffCatalog.js?v=20261103-pet-gremlin" defer></script>
 <script src="./src/ui/petBuffCatalog.js?v=20261103-pet-expansion2" defer></script>
-<script src="./src/main.js?v=20261117" defer></script>
+<script src="./src/main.js?v=20261117-combat" defer></script>
 <script src="./src/ui/samuraiHeartCombat.js?v=20261010-combat-attempt" defer></script>
 <script src="./src/ui/timedBuffCombat.js?v=20261011-defense-buffs" defer></script>
 <script src="./src/calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine" defer></script>
@@ -1782,7 +1783,7 @@ MoE固有の主な仮定:
 <script src="./src/data/generated/combatReplacementRules.generated.js?v=20261016-gaps25-final" defer></script>
 <script src="./src/data/generated/combatGeneratedNpcWait.generated.js?v=20261016-gaps25-final" defer></script>
 <script src="./src/data/generated/combatTimerReceipts.generated.js?v=20261016-gaps33-complete" defer></script>
-<script src="./src/calc/combatNumericExtensions.js?v=20261017-gaps45-parameters" defer></script>
+<script src="./src/calc/combatNumericExtensions.js?v=20261117-combat" defer></script>
 <script src="./src/calc/combatMovementNumerics.js?v=20261012-skill-range" defer></script>
 <script src="./src/data/generated/combatSummonAbilities.generated.js?v=20261011-gaps9" defer></script>
 <script src="./src/calc/combatSummonNumerics.js?v=20261011-gaps9" defer></script>
@@ -1805,13 +1806,13 @@ MoE固有の主な仮定:
 <script src="./src/calc/combatGeneratedInputNumerics.js?v=20261017-gaps51-trap-level-input" defer></script>
 <script src="./src/data/generated/combatGuardReplay.generated.js?v=20261016-gaps33-complete" defer></script>
 <script src="./src/calc/combatGuardReplayNumerics.js?v=20261016-gaps33-complete" defer></script>
-<script src="./src/calc/combatNumerics.js?v=20261102" defer></script>
+<script src="./src/calc/combatNumerics.js?v=20261117-combat" defer></script>
 <script src="./src/data/manual/utilityDescriptionScope.manual.js?v=20261016" defer></script>
 <script src="./src/calc/combatCalculationScope.js?v=20261020-raid" defer></script>
 <script src="./src/data/generated/combatCatalogFilters.generated.js?v=20261027" defer></script>
-<script src="./src/ui/combatConditionInputs.js?v=20261030" defer></script>
+<script src="./src/ui/combatConditionInputs.js?v=20261117-combat" defer></script>
 <script src="./src/calc/buffNumericRegistration.js?v=20261102" defer></script>
-<script src="./src/ui/combatCatalogTrial.js?v=20261030" defer></script>
+<script src="./src/ui/combatCatalogTrial.js?v=20261117-combat" defer></script>
 <script src="./src/ui/buildAnalysis.js?v=20261102-selection-fix" defer></script>
 <script src="./src/ui/showcaseSkillPlusTotals.js?v=20261018-display-precision" defer></script>
 <script src="./src/ui/showcaseElementDamageTotals.js?v=20261018-display-precision" defer></script>

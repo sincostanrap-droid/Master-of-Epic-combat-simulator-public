@@ -51,15 +51,15 @@
   // Native fixture verifies the float32 store and the OR of the two triggers.
   function innatePower(power,applies){return applies?f(power+Math.max(0,power*f(.2))):power;}
   function splitSpeciesBuffEffects(st,hasOtherEffect){
-    //13132's conversion remains active when another selected244 replaces only
-    //its racial effect. Reuse the already declared special:latest rule.
+    // Keep the racial channel independent of the conversion's own conflict group.
+    // Racial channels coexist; core selects the maximum matching the target.
     const composite=(st.composite||[]).flatMap(row=>{
       const id=Number(row.clientBuffDefinitionId),definition=weaponTraits?.buffRecords?.[id];
       if(id!==13132||!definition)return [row];
       const base={...row,special:1};
       return [base,{enabled:row.enabled,excluded:row.excluded,
         slot:hasOtherEffect(base)?false:row.slot!==false,name:row.name+'（種族特攻）',
-        tags:'special:latest',stackRule:'latest',special:number(row.special,1)===1?definition.value:row.special,
+        tags:'',stackRule:'',special:number(row.special,1)===1?definition.value:row.special,
         specialTarget:row.specialTarget||definition.target}];
     });
     return {...st,composite};

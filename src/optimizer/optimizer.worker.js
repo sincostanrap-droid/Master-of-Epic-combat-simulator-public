@@ -43,12 +43,12 @@ importScripts(
   "../calc/additionalTechniqueDamage.js?v=20261009-weapon-procs",
   "../calc/attackFollowups.js?v=20261009-normal-attack-followups",
   "../data/generated/weaponSpeciesTraits.generated.js?v=20261008-attack-special-2",
-  "../calc/techniqueDamage.js?v=20261110",
+  "../calc/techniqueDamage.js?v=20261117-combat",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261117",
-  "../calc/core.js?v=20261103-pet-party",
-  "./core.js?v=20261103-dps-optimizer"
+  "../main.js?v=20261117-combat",
+  "../calc/core.js?v=20261117-combat",
+  "./core.js?v=20261117-combat"
 );
 
 self.onmessage = event => {
