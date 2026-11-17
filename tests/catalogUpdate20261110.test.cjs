@@ -10,7 +10,7 @@ for(const worker of [false,true]){
  const items=p.equipmentCatalogItems(),row=id=>json(p.catalogEquipmentToRow(items.find(r=>r.officialId===id)));
  eq(p.MOE_EQUIPMENT_CATALOG_META.gameUpdateDate,'2026-11-10');
  for(const id of [23537,23538,23539,23543,23545,23540])eq(items.filter(r=>r.officialId===id).length,1);
- for(const id of [23542,23544])eq(items.filter(r=>r.officialId===id).length,0);
+ for(const id of [23542,23544])eq(require('../src/data/generated/catalogUpdate20261110.generated.js').equipment.filter(r=>r.officialId===id).length,0);
  const rose=row(23537),back=row(23538),shield=row(23539),boots=row(23543),bag=row(23545),brow=row(23540);
  eq([rose.magic,rose.extraMP],[4,10]);
  eq([back.slot,back.attack,back.extraAC,back.extraNeutralRes],['装飾: 背中',3,10,20]);

@@ -4,7 +4,8 @@
   common?require('../data/generated/catalogUpdate20261020.generated.js'):root.MOE_CATALOG_UPDATE_20261020,
   common?require('../data/generated/catalogUpdate20261027.generated.js'):root.MOE_CATALOG_UPDATE_20261027,
   common?require('../data/generated/catalogUpdate20261104.generated.js'):root.MOE_CATALOG_UPDATE_20261104,
-  common?require('../data/generated/catalogUpdate20261110.generated.js'):root.MOE_CATALOG_UPDATE_20261110].filter(Boolean);
+  common?require('../data/generated/catalogUpdate20261110.generated.js'):root.MOE_CATALOG_UPDATE_20261110,
+  common?require('../data/generated/catalogUpdate20261117.generated.js'):root.MOE_CATALOG_UPDATE_20261117].filter(Boolean);
  const data={records:sources.flatMap(source=>source.records)};
  const records=new Map(data.records.map(r=>[r.id,r])),f=Math.fround;
  const id=row=>Number(row.clientBuffDefinitionId||String(row.catalogRuleId||'').replace(/^technic-/,''));
@@ -22,7 +23,7 @@
    const d=records.get(id(row));if(!d||row.enabled===false||row.excluded||seen.has(d.id))continue;
    seen.add(d.id);if(+world===1&&d.effects.every(e=>(e.flags&0x300)===0x100))continue;names.push(d.name);
    for(const e of d.effects){
-    if(e.kind===235){const name=({40:'キック',56:'破壊魔法',58:'神秘魔法',62:'死の魔法',66:'暗黒命令'})[e.selector];if(name)skills[name]=f((skills[name]||0)+e.value);}
+    if(e.kind===235){const name=({15:'薬調合',18:'包帯',40:'キック',56:'破壊魔法',57:'回復魔法',58:'神秘魔法',62:'死の魔法',66:'暗黒命令'})[e.selector];if(name)skills[name]=f((skills[name]||0)+e.value);}
     if(e.kind===275)elements[e.selector]=f((elements[e.selector]||0)+e.value);
     if(e.kind===273)reductions[e.selector]=f((reductions[e.selector]||0)+e.value);
    }

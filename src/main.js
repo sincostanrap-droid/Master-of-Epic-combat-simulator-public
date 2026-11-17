@@ -12169,7 +12169,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261110`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261117`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
