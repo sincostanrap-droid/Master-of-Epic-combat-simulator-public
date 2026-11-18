@@ -38,15 +38,17 @@ function specialBuffRuleTsvParse(r){
   if(/^[1-9][0-9]*$/.test(r.specialDefinitionId||''))out.clientBuffDefinitionId=String(r.specialDefinitionId);
   return out;
 }
-const BUFF_PRESENTATION_TSV_FIELDS = ['durationSeconds','catalogRuleId','catalogSource','catalogInputs','clientBuffDefinitionId','catalogNumeric','excluded','fixed','stackRule','autoStackGroup','forcedEvasion','convMagicSpeedRate','convDrunkRate'];
+const BUFF_PRESENTATION_TSV_FIELDS = ['durationSeconds','catalogRuleId','catalogSource','catalogInputs','clientBuffDefinitionId','catalogNumeric','excluded','fixed','stackRule','autoStackGroup','forcedEvasion','convMagicSpeedRate','convDrunkRate','sustainMode','sustainDurationSeconds','sustainDowntimeSeconds'];
 function buffPresentationTsvExport(r) {
-  return {durationSeconds:r.durationSeconds ?? '', catalogRuleId:r.catalogRuleId || '',
+  return {sustainMode:r.sustainMode||'',sustainDurationSeconds:r.sustainDurationSeconds??'',sustainDowntimeSeconds:r.sustainDowntimeSeconds??'',durationSeconds:r.durationSeconds ?? '', catalogRuleId:r.catalogRuleId || '',
     catalogSource:r.catalogSource || '', catalogInputs:r.catalogInputs ? JSON.stringify(r.catalogInputs) : '',clientBuffDefinitionId:r.clientBuffDefinitionId||'',catalogNumeric:r.catalogNumeric?.version===1?JSON.stringify(r.catalogNumeric):'',excluded:boolToCell(r.excluded),fixed:boolToCell(r.fixed),stackRule:r.stackRule||'',autoStackGroup:r.autoStackGroup||'',forcedEvasion:hasForcedEvasionValue(r.forcedEvasion)?r.forcedEvasion:'',convMagicSpeedRate:r.convMagicSpeedRate??0,convDrunkRate:r.convDrunkRate??0};
 }
 function buffPresentationTsvParse(r) {
   let catalogInputs;
   try { catalogInputs = JSON.parse(r.catalogInputs || 'null'); } catch {}
   const out = {};
+  if(['refresh','normalCast','once','maintained'].includes(r.sustainMode))out.sustainMode=r.sustainMode;
+  for(const key of ['sustainDurationSeconds','sustainDowntimeSeconds'])if(r[key]!=null&&r[key]!==''&&Number.isFinite(+r[key])&&+r[key]>=0)out[key]=+r[key];
   if(r.fixed!=null&&r.fixed!=='')out.fixed=cellToBool(r.fixed);
   for(const key of ['stackRule','autoStackGroup'])if(r[key])out[key]=r[key];
   for(const key of ['forcedEvasion','convMagicSpeedRate','convDrunkRate'])if(r[key]!=null&&r[key]!==''&&Number.isFinite(+r[key]))out[key]=+r[key];

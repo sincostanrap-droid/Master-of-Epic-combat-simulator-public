@@ -86,6 +86,11 @@ function optimizerBuildCurrentConfigResult(inputs, settings) {
   if (equipmentConflicts.length) {
     reasons.push(`装備競合 ${equipmentConflicts.join(", ")}`);
   }
+  if (!optimizerEquipmentSelectionAllowed(equipmentIdxs, optimizerEquipmentGroups(settings), settings)) {
+    reasons.push("装備の固定・除外・武器条件に不一致");
+  }
+  const eligible = new Set(optimizerCompositeCandidates(settings).flatMap(candidate => candidate.indices));
+  if (compositeIdxs.some(i => !eligible.has(i))) reasons.push("検索から除外したBuffを使用中");
 
   if (ev.score <= OPTIMIZER_INVALID_SCORE / 2 && !capViolations.length) {
     reasons.push("目的/上限判定で無効スコア");
@@ -111,7 +116,7 @@ function optimizerBuildCurrentConfigResult(inputs, settings) {
 }
 
 function optimizerResultPassesDisplayFilters(result, settings) {
-  if (!result || !result.metrics) return false;
+  if (!result || !result.metrics || result.baselineInvalid) return false;
   return result.metrics.slots.total <= settings.maxSlots
     && !(result.capViolations || []).length
     && result.score > OPTIMIZER_INVALID_SCORE / 2;
@@ -130,7 +135,7 @@ function optimizerBuildCurrentEquipmentBuffOptimizedResult(inputs, settings) {
   const fixedMismatch = optimizerEquipmentRows(settings).some((row, index) =>
     (row.optimizerFixed && !row.optimizerExcluded && !selected.has(index))
     || (row.optimizerExcluded && selected.has(index)));
-  if (fixedMismatch) {
+  if (fixedMismatch || !optimizerEquipmentSelectionAllowed(equipmentIdxs, optimizerEquipmentGroups(settings), settings)) {
     settings.optimizerCurrentEquipmentSeedStatus = "固定・除外条件と不一致のため対象外";
     return null;
   }
@@ -183,7 +188,7 @@ function optimizerMergeSeedResults(rawResults, seedResults, settings) {
 }
 
 function optimizerFilterBetterThanCurrent(results, currentResult, settings) {
-  if (!settings?.onlyBetterThanCurrent || !currentResult) return results || [];
+  if (!settings?.onlyBetterThanCurrent || !currentResult || currentResult.baselineInvalid) return results || [];
   const before = (results || []).length;
   const filtered = (results || []).filter(r => optimizerCompareEvaluations(r, currentResult) > 0);
   settings.optimizerBetterThanCurrentFiltered = before - filtered.length;
@@ -249,6 +254,7 @@ function optimizerDiagnosticFmtInt(n) {
 function optimizerDiagnosticMetricValue(result, settings) {
   const m = result?.metrics || {};
   const objective = settings?.objective || "damage";
+  if (objective === "sustainedDps") return m.sustainedAttack?.averageDps ?? OPTIMIZER_INVALID_SCORE;
   if (objective === "attackDps") return m.attackDps?.continuousDps ?? OPTIMIZER_INVALID_SCORE;
   if (objective === "damage") return Number(m.rawDamage ?? m.damage ?? m.finalDamage ?? result?.score ?? 0);
   if (objective === "atk") return Number(m.atk ?? result?.score ?? 0);
@@ -347,8 +353,90 @@ function makeOptimizerExplorationDiagnostic({settings, equipmentBeams, buffEvalB
   };
 }
 
-// Revisit complete configurations with Buffs included. Equipment-only beam ranking
-// can discard a useful path before an external Buff satisfies its requirements.
+function optimizerEquipmentSelectionAllowed(indices, groups, settings) {
+  const rows = optimizerEquipmentRows(settings);
+  if (!optimizerSelectionHasMainWeapon(indices, settings)) return false;
+  for (const group of groups) {
+    const selected = indices.filter(i => rows[i]?.slot === group.slot && equipmentCandidateHasData(rows[i]));
+    if (selected.length > 1) return false;
+    const others = indices.filter(i => rows[i]?.slot !== group.slot);
+    const allowed = optimizerEquipmentCandidatesForSelection(group, others, settings);
+    if (selected.length ? !allowed.some(c => c.idx === selected[0])
+        : !allowed.some(c => !equipmentCandidateHasData(c.row))) return false;
+  }
+  return !indices.some(i => optimizerEquipmentWouldConflict(indices.filter(j => j !== i), i, settings));
+}
+
+// Evaluate changes to a complete build before an equipment-only beam can
+// exhaust the time budget. Leave most of the budget for the wider search.
+function optimizerSearchCurrentNeighbors(inputs, settings, groups, until) {
+  const rows = optimizerEquipmentRows(settings);
+  let gear = optimizerCurrentEnabledEquipmentIdxs(settings);
+  if (!optimizerEquipmentSelectionAllowed(gear, groups, settings)) {
+    // Fixed or excluded rows can make the current layout ineligible. Assemble
+    // a legal starting point, retaining eligible active items where possible.
+    gear = [];
+    for (const group of groups) {
+      const allowed = optimizerEquipmentCandidatesForSelection(group, gear, settings)
+        .filter(c => !optimizerEquipmentWouldConflict(gear, c.idx, settings));
+      const candidate = allowed.find(c => c.row.enabled && equipmentCandidateHasData(c.row)) || allowed[0];
+      if (!candidate) return null;
+      if (equipmentCandidateHasData(candidate.row)) gear.push(candidate.idx);
+    }
+    if (!optimizerEquipmentSelectionAllowed(gear, groups, settings)) return null;
+  }
+  const candidates = optimizerCompositeCandidates(settings);
+  const fixed = new Set(optimizerFixedCompositeCandidates(settings, candidates).map(c => c.idx));
+  let buffs = candidates.filter(c => c.row.enabled || fixed.has(c.idx)).map(c => c.idx);
+  let current = null;
+  function consider(equipmentIdxs, units) {
+    const evaluation = optimizerEvaluateBuffSelection(equipmentIdxs, units, inputs, settings);
+    const capViolations = optimizerFinalConstraintViolations(evaluation.metrics, settings);
+    const candidate = {...evaluation, equipmentIdxs, compositeIdxs:optimizerLinkedCompositeIndices(units, settings),
+      capViolations, equipmentConflicts:[], forceOtherBuffs:settings.forceOtherBuffs,
+      sourceLabel:'現在構成からの組み替え'};
+    const feasible = optimizerResultPassesDisplayFilters(candidate, settings);
+    const excess = Math.max(0, evaluation.metrics.slots.total - settings.maxSlots);
+    if (current) {
+      if (current.feasible && !feasible) return;
+      if (feasible === current.feasible && (excess > current.excess ||
+          (excess === current.excess && optimizerSortByEvaluation(candidate, current.result) >= 0))) return;
+    }
+    current = {result:candidate, feasible, excess};
+    gear = equipmentIdxs;
+    buffs = units;
+  }
+  function found() {
+    if (!current?.feasible) return null;
+    const result = current.result;
+    return {...result, equipmentSummary:optimizerEquipmentSummaryByIdx(result.equipmentIdxs, result.metrics)};
+  }
+  consider(gear, buffs);
+  for (const {idx} of candidates) {
+    if (performance.now() >= until) return found();
+    if (fixed.has(idx)) continue;
+    consider(gear, buffs.includes(idx) ? buffs.filter(i => i !== idx) : buffs.concat(idx));
+  }
+  for (const group of groups) {
+    const others = gear.filter(i => rows[i].slot !== group.slot);
+    for (const candidate of optimizerEquipmentCandidatesForSelection(group, others, settings)) {
+      if (performance.now() >= until) return found();
+      if (gear.includes(candidate.idx)) continue;
+      const indices = equipmentCandidateHasData(candidate.row) ? others.concat(candidate.idx) : others;
+      if (optimizerEquipmentSelectionAllowed(indices, groups, settings)) consider(indices, buffs);
+    }
+  }
+  for (const remove of buffs.slice()) {
+    if (fixed.has(remove) || !buffs.includes(remove)) continue;
+    const others = buffs.filter(i => i !== remove);
+    for (const {idx} of candidates) {
+      if (performance.now() >= until) return found();
+      if (!others.includes(idx) && idx !== remove) consider(gear, others.concat(idx));
+    }
+  }
+  return found();
+}
+
 function optimizerRefineEquipmentResults(results, inputs, settings, onProgress) {
   settings.optimizerEquipmentRefinementChecks = 0;
   settings.optimizerEquipmentRefinementImprovements = 0;
@@ -364,18 +452,6 @@ function optimizerRefineEquipmentResults(results, inputs, settings, onProgress) 
   });
   const searchedBuffs = new Map();
   const out = [];
-  function validEquipment(indices) {
-    if (!optimizerSelectionHasMainWeapon(indices, settings)) return false;
-    for (const group of groups) {
-      const selected = indices.filter(i => rows[i]?.slot === group.slot);
-      if (selected.length > 1) return false;
-      const others = indices.filter(i => rows[i]?.slot !== group.slot);
-      const allowed = optimizerEquipmentCandidatesForSelection(group, others, settings);
-      if (selected.length ? !allowed.some(c => c.idx === selected[0])
-          : !allowed.some(c => !equipmentCandidateHasData(c.row))) return false;
-    }
-    return !indices.some(i => optimizerEquipmentWouldConflict(indices.filter(j => j !== i), i, settings));
-  }
   function resultFor(indices, selection, evaluated) {
     return {
       equipmentIdxs: indices, compositeIdxs: selection,
@@ -398,7 +474,7 @@ function optimizerRefineEquipmentResults(results, inputs, settings, onProgress) 
           const indices = optimizerCanonicalEquipmentIdxs(others.concat(
             equipmentCandidateHasData(candidate.row) ? [candidate.idx] : []), settings);
           const key = optimizerEquipmentSelectionKey(indices, settings);
-          if (key === optimizerEquipmentSelectionKey(best.equipmentIdxs, settings) || !validEquipment(indices)) continue;
+          if (key === optimizerEquipmentSelectionKey(best.equipmentIdxs, settings) || !optimizerEquipmentSelectionAllowed(indices, groups, settings)) continue;
           settings.optimizerEquipmentRefinementChecks++;
           // Keep the incumbent Buff selection as well: heuristic Buff search must
           // not hide a straightforward improvement that works with those Buffs.
@@ -449,18 +525,32 @@ function runOptimizerCore(payload, onProgress=null) {
   settings.optimizerCapRejected = 0;
   optimizerPrepareRunCaches(settings);
   const startTime = performance.now();
-
+  const rawResults = [];
+  let budgetBaseline=null;
+  if(Number.isFinite(settings.timeLimitMs)&&settings.timeLimitMs>0){
+    budgetBaseline=optimizerBuildCurrentConfigResult(inputs,settings);
+    settings._searchDeadline=startTime+settings.timeLimitMs;
+  }
+  try {
+  if (settings._searchDeadline) {
+    const groups = optimizerEquipmentGroups(settings);
+    if (optimizerEquipmentGroupProduct(groups) > (settings.exactEquipmentLimit || 0)) {
+      onProgress?.({phase:'current', message:'現在構成から装備・Buffの入れ替えを確認中'});
+      const neighbor = optimizerSearchCurrentNeighbors(inputs, settings, groups, startTime + settings.timeLimitMs / 3);
+      if (neighbor) rawResults.push(neighbor);
+    }
+  }
   const equipmentBeams = optimizerBuildEquipmentCandidates(inputs, settings);
   const buffEvalBeams = settings.optimizerEquipmentSearchMode === "exact"
     ? equipmentBeams
     : equipmentBeams.slice(0, settings.equipmentEvalLimit || equipmentBeams.length);
 
-  const rawResults = [];
   const total = buffEvalBeams.length;
   const progressStep = Math.max(1, Math.floor(total / 50));
 
   buffEvalBeams.forEach((beam, index) => {
     const equipmentIdxs = optimizerCanonicalEquipmentIdxs(beam.equipmentIdxs, settings);
+    settings._budgetEquipmentKey=optimizerEquipmentSelectionKey(equipmentIdxs,settings);
     const buff = optimizerSelectExternalBuffs(equipmentIdxs, inputs, settings);
     const result = {
       equipmentIdxs,
@@ -541,6 +631,19 @@ function runOptimizerCore(payload, onProgress=null) {
       settings: Object.fromEntries(Object.entries(settings).filter(([key]) => !key.startsWith("_")))
     }
   };
+  }catch(error){
+    if(error.name!=='OptimizerTimeLimit')throw error;
+    delete settings._searchDeadline;
+    if(settings._budgetIncumbent)rawResults.push(settings._budgetIncumbent);
+    const ranked=optimizerDedupeResultsByEquipment(rawResults,settings).sort(optimizerSortByEvaluation);
+    const auto=optimizerFilterBetterThanCurrent(ranked,budgetBaseline,settings).slice(0,settings.topN||10);
+    const results=optimizerMergeCurrentConfigResult(auto,budgetBaseline,settings);
+    const elapsed=Math.round(performance.now()-startTime);
+    return {results,summary:{elapsed,timeLimitReached:true,evaluated:rawResults.length,
+      statusText:`探索時間の上限で停止：${elapsed}ms。見つかった構成を表示します（最適の保証なし）。表示 ${results.length}件。`,
+      optimizerDiagnostic:{approximate:true,timeLimitReached:true},
+      settings:Object.fromEntries(Object.entries(settings).filter(([key])=>!key.startsWith('_')))}};
+  }finally{delete settings._searchDeadline;}
 }
 
 /* v21: skillPlus objective/filter integration
@@ -617,7 +720,7 @@ function runOptimizerCore(payload, onProgress=null) {
         (out?.results || []).forEach(r => annotateResult(r, currentSettings));
         if (out?.summary && currentSettings?.skillPlusFilters?.length && api()) {
           const desc = api().filterDescription(currentSettings.skillPlusFilters);
-          if (desc && !String(out.summary).includes("スキル強化条件")) out.summary += ` / スキル強化条件 ${desc}`;
+          if (desc && !out.summary.statusText.includes("スキル強化条件")) out.summary.statusText += ` / スキル強化条件 ${desc}`;
         }
       } catch {}
       return out;

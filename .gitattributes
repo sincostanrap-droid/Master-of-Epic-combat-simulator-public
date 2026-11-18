@@ -236,3 +236,4 @@
 /styles/settingsCompact.css -text
 /src/data/generated/petBuffInputs.generated.js -text
 /src/calc/petBuffFormulas.js -text
+/src/calc/sustainedAttack.js -text

@@ -7112,6 +7112,10 @@ function normalizeCompositeRows(rows) {
       note: r.note || ""
     };
     if(r.catalogNumeric?.version===1)out.catalogNumeric=structuredClone(r.catalogNumeric);
+    if (['refresh','normalCast','once','maintained'].includes(r.sustainMode)) out.sustainMode=r.sustainMode;
+    for (const key of ['sustainDurationSeconds','sustainDowntimeSeconds']) {
+      if (r[key] != null && r[key] !== '' && Number.isFinite(+r[key]) && +r[key]>=0) out[key]=+r[key];
+    }
     const duration = buffDurationSeconds(r);
     if (duration !== null) out.durationSeconds = duration;
     if (/^[1-9][0-9]*$/.test(String(r.clientBuffDefinitionId || '')))
@@ -7190,7 +7194,7 @@ function compositeEffectText(r) {
  *
  * ただし展開行はslot:falseにして、バフ枠は元の装備以外Buff 1行だけで数える。
  */
-function expandCompositeState(st) {
+function expandCompositeState(st, rows=normalizeCompositeRows(st?.composite)) {
   const out = clone(st || {});
   out.pct = Array.isArray(out.pct) ? out.pct : [];
   out.flat = normalizeFlatRows(out);
@@ -7199,7 +7203,7 @@ function expandCompositeState(st) {
   out.special = Array.isArray(out.special) ? out.special : [];
   out.post = Array.isArray(out.post) ? out.post : [];
 
-  normalizeCompositeRows((st || {}).composite).filter(r => r.enabled && !r.excluded).forEach(r => {
+  rows.filter(r => r.enabled && !r.excluded).forEach(r => {
     const baseName = r.name || "装備以外Buff";
     const note = r.note || "";
     if (+r.attackPct) out.pct.push({enabled:true, slot:false, name:`${baseName} 攻撃力%`, target:"attack", percent:+r.attackPct, note});
@@ -10626,7 +10630,7 @@ let optimizerLastPayload = null;
 // Calculation-tab objectives are opt-in. Do not expose every display field as
 // an optimization metric before its evaluation and import path are supported.
 const OPTIMIZER_UI_OBJECTIVE_KEYS = Object.freeze([
-  "damage", "attackDps", "attack", "magic", "speed", "slotsMin",
+  "damage", "attackDps", "sustainedDps", "attack", "magic", "speed", "slotsMin",
   "extraAC", "extraHP", "extraMP", "extraST", "extraMaxWeight",
   "extraAvoid", "extraAttackDelay", "extraMagicDelay",
   "extraFireRes", "extraWaterRes", "extraEarthRes", "extraWindRes", "extraNeutralRes",
@@ -10636,16 +10640,17 @@ const OPTIMIZER_UI_OBJECTIVE_KEYS = Object.freeze([
 function integratedOptimizerSettings() {
   ensureOptimizerObjectiveOptions();
   const settings = {
-    maxSlots: Math.max(0, parseInt(byId("optimizerMaxSlots")?.value, 10) || 24),
+    maxSlots: Math.max(0, parseInt(byId("optimizerMaxSlots")?.value || "24", 10)),
     topN: Math.max(1, parseInt(byId("optimizerTopN")?.value, 10) || 10),
     accuracyPreset: byId("optimizerAccuracyPreset")?.value || "balanced",
     beamWidth: Math.max(10, parseInt(byId("optimizerBeamWidth")?.value, 10) || 100),
     equipmentEvalLimit: Math.max(1, parseInt(byId("optimizerEquipmentEvalLimit")?.value, 10) || 50),
-    exactEquipmentLimit: Math.max(0, parseInt(byId("optimizerExactEquipmentLimit")?.value, 10) || 3000),
+    exactEquipmentLimit: Math.max(0, parseInt(byId("optimizerExactEquipmentLimit")?.value || "3000", 10)),
     buffMode: byId("optimizerBuffMode")?.value || "local",
     buffBeamWidth: Math.max(20, parseInt(byId("optimizerBuffBeamWidth")?.value, 10) || 120),
     localPasses: Math.max(1, parseInt(byId("optimizerLocalPasses")?.value, 10) || 8),
     objective: byId("optimizerObjective")?.value || "damage",
+    timeLimitMs: Number(byId('optimizerTimeLimit')?.value || 30)*1000,
     attackDps: optimizerAttackDpsConfig(state.attackDps),
     skillPlusTargetSkill: byId("optimizerSkillPlusTargetSkill")?.value || "",
     skillPlusFilters: globalThis.MOESkillPlusV21?.readFilterRows("optimizerSkillPlusFilter", 4) || [],
@@ -10688,7 +10693,7 @@ function integratedOptimizerSettings() {
 }
 
 function optimizerUsesAttackDps(settings) {
-  return settings?.objective === "attackDps" || settings?.secondaryObjective === "attackDps";
+  return [settings?.objective,settings?.secondaryObjective].some(x=>x==='attackDps'||x==='sustainedDps');
 }
 
 function optimizerRequiresMotionLimit(settings) {
@@ -10764,9 +10769,9 @@ const OPTIMIZER_MINIMIZE_OBJECTIVES = Object.freeze(new Set([
 ]));
 
 // Sum only active, conflict-resolved Buff effects. skillPlus remains display/search data.
-function skillPlusTotalsFromResolvedState(st) {
+function skillPlusTotalsFromResolvedState(st, rows=normalizeCompositeRows(st?.composite)) {
   const totals = {};
-  normalizeCompositeRows(st?.composite).filter(row => row.enabled && !row.excluded).forEach(row => {
+  rows.filter(row => row.enabled && !row.excluded).forEach(row => {
     normalizeAdditionalEffects(row.extraEffects).forEach(effect => {
       if (effect.key !== "skillPlus" || !effect.name || !Number.isFinite(effect.value)) return;
       totals[effect.name] = (totals[effect.name] || 0) + effect.value;
@@ -10794,6 +10799,7 @@ function optimizerSkillFilterDistance(metrics, settings) {
 }
 
 function optimizerObjectiveRawValue(m, objective) {
+  if (objective === "sustainedDps") return m.sustainedAttack?.supported ? m.sustainedAttack.averageDps : OPTIMIZER_INVALID_SCORE;
   if (objective === "attackDps") return m.attackDps?.optimizationSupported ? m.attackDps.continuousDps : OPTIMIZER_INVALID_SCORE;
   if (objective === "skillPlus") return +(m.skillPlusScore || 0);
   if (objective === "attack") return m.atk;
@@ -10830,6 +10836,7 @@ function optimizerObjectiveLabel(objective) {
   const base = ({
     damage:"ダメージ",
     attackDps:"アタックDPS",
+    sustainedDps:"更新込みアタックDPS",
     attack:"攻撃力",
     magic:"魔力",
     speed:"移動速度",
@@ -10988,6 +10995,11 @@ function optimizerAttackDelayBResultText(m, settings) {
 
 function optimizerRequiredConditionViolations(m, settings) {
   const violations = optimizerUsesAttackDps(settings) ? (m.attackDps?.optimizationReasons || ["DPSを計算できません"]).slice() : [];
+  if (m.sustainedAttack?.supported === false) {
+    for (const reason of m.sustainedAttack.reasons) {
+      if (!violations.includes(reason)) violations.push(reason);
+    }
+  }
   if(m.petParty?.excess>0)violations.push(`自分のペット ${m.petParty.total}/3匹（Buff以外 ${m.petParty.other}匹を含む）`);
   const eps = 0.000001;
   if (optimizerMotionLimitMissing(m, settings)>0) {
@@ -11166,6 +11178,7 @@ function optimizerPrepareRunCaches(settings) {
 // Calculation-only projection: preserve row order and leave candidate indices in the
 // original arrays. Disabled candidates have no effect on metrics or Buff precedence.
 function optimizerComputeMetrics(st, inputs, settings=null) {
+  optimizerCheckSearchDeadline(settings);
   const compact = {...st,
     equipment: st.equipment.filter(row => row.enabled !== false),
     composite: st.composite.filter(row => row.enabled)
@@ -11176,7 +11189,41 @@ function optimizerComputeMetrics(st, inputs, settings=null) {
   const metrics=computeMetrics(compact, {...inputs, attackType:"attack", techMultiplier:1,
     allowCrit:cfg.criticalCancel, critRate:cfg.criticalCancel ? 1 : 0}, capture);
   optimizerAttachAttackDps(metrics, settings, capture);
+  if ([settings?.objective,settings?.secondaryObjective].includes('sustainedDps')) {
+    const single={...settings,objective:'attackDps',secondaryObjective:''};
+    metrics.sustainedAttack=computeSustainedAttack(compact,inputs,settings.attackDps,single,metrics);
+    // Incomplete gear/Buff selections can reach the required motion speed or
+    // critical rate later. Keep their constraint-distance rank searchable.
+    // Failures during a valid starting build (e.g. an expired Buff) stay hard.
+    const missingInitialRequirement = optimizerMotionLimitMissing(metrics, settings) > 0
+      || (settings.requireCritRate100 && (+metrics.extraStats?.extraCritRatePct || 0) < 100);
+    if(!metrics.sustainedAttack.supported && !missingInitialRequirement){
+      metrics.attackDps.optimizationSupported=false;
+      metrics.attackDps.optimizationReasons.push(...metrics.sustainedAttack.reasons);
+    }
+  }
   return metrics;
+}
+
+function computeSustainedAttack(st,inputs,raw,settings=null,initial=null){
+  const cfg=normalizeAttackDpsState(raw),rows=st.composite.filter(r=>r.enabled&&!r.excluded);
+  const single=settings||{objective:'attackDps',attackDps:cfg,requireMotionLimit:false};
+  const startState={...st,composite:rows};
+  const resolved=resolveAllBuffRowsForGroups(expandEquipmentBuffState(expandSkillSimMasteryBuffState(startState)));
+  const blocked=resolved.state.composite.slice(0,rows.length).filter(r=>r._suppressedByGroup);
+  if(blocked.length)return {supported:false,reasons:['競合しているBuffを外してください：'+blocked.map(r=>r.name).join(' / ')+'（更新による相互上書きは未対応）'],totalDamage:null,averageDps:null};
+  const buffs=rows.map(r=>({...r,durationSeconds:buffDurationSeconds(r)}));
+  return MOESustainedAttack.simulate({seconds:cfg.sustainMinutes*60,buffs,concentration:st.skillSim?.skills?.['集中力'],evaluate:active=>{
+    const current=active.length===rows.length&&initial?initial:optimizerComputeMetrics({...st,
+      composite:active.map(i=>rows[i])},inputs,single);
+    const d=current.attackDps;
+    const reasons=[...(d?.optimizationReasons||[])];
+    if(optimizerMotionLimitMissing(current,single)>0)
+      reasons.push('Buffが切れた後もモーション上限に届く条件が必要です');
+    if(cfg.criticalCancel&&(+current.extraStats?.extraCritRatePct||0)<100)
+      reasons.push('クリティカル連続使用には、攻撃中もクリティカル率100%を維持する条件が必要です');
+    return {supported:!!d?.optimizationSupported&&!reasons.length,dps:d?.continuousDps,reasons};
+  }});
 }
 
 function optimizerEquipmentRows(settings) {
@@ -11735,6 +11782,7 @@ function optimizerScoreTolerance(score) {
 }
 
 function optimizerEvaluateBuffSelection(equipmentIdxs, compositeIdxs, inputs, settings) {
+  optimizerCheckSearchDeadline(settings);
   const key = optimizerSelectionCacheKey(equipmentIdxs, compositeIdxs, settings);
   if (settings && settings._evaluationCache && settings._evaluationCache.has(key)) {
     settings.optimizerCacheHits = (settings.optimizerCacheHits || 0) + 1;
@@ -11762,7 +11810,28 @@ function optimizerEvaluateBuffSelection(equipmentIdxs, compositeIdxs, inputs, se
     settings._evaluationCache.set(key, result);
   }
 
+  if(settings?._searchDeadline && settings._budgetEquipmentKey===optimizerEquipmentSelectionKey(equipmentIdxs,settings)
+      && (!settings._budgetIncumbent || optimizerCompareEvaluations(result,settings._budgetIncumbent)>0)){
+    const expanded=optimizerLinkedCompositeIndices(compositeIdxs,settings);
+    const selected=new Set(expanded);
+    const candidates=optimizerCompositeCandidates(settings);
+    const allowed=new Set(candidates.flatMap(c=>c.indices));
+    if(expanded.every(i=>allowed.has(i)) && optimizerFixedCompositeCandidates(settings,candidates).every(c=>selected.has(c.idx))
+        && !result.violations.length && !optimizerFinalConstraintViolations(metrics,settings).length
+        && metrics.slots.total<=settings.maxSlots && result.score>OPTIMIZER_INVALID_SCORE/2){
+      settings._budgetIncumbent={...result,equipmentIdxs:equipmentIdxs.slice(),compositeIdxs:expanded,
+        equipmentSummary:optimizerEquipmentSummaryByIdx(equipmentIdxs,metrics),equipmentConflicts:[],capViolations:[],
+        forceOtherBuffs:settings.forceOtherBuffs,sourceLabel:'時間内に見つかった構成'};
+    }
+  }
+
   return result;
+}
+
+function optimizerCheckSearchDeadline(settings){
+  if(settings?._searchDeadline && performance.now()>=settings._searchDeadline){
+    const error=new Error('探索時間の上限に達しました');error.name='OptimizerTimeLimit';throw error;
+  }
 }
 
 function optimizerPruneExternalBuffs(equipmentIdxs, selected, fixedSet, inputs, settings) {
@@ -12122,7 +12191,10 @@ function optimizerReevaluateResultsOnMain(results, payload) {
       equipmentSummary: optimizerEquipmentSummaryByIdx(equipmentIdxs, metrics),
       reevaluatedOnMain: true
     };
-  }).sort(optimizerSortByEvaluation);
+  }).sort((a,b) => {
+    const reference = r => Number(!!(r?.baselineReference || r?.baselineInvalid));
+    return reference(a) - reference(b) || optimizerSortByEvaluation(a,b);
+  });
 }
 
 function runOptimizerOnMainThread(payload, reason="") {
@@ -12177,7 +12249,7 @@ function ensureOptimizerWorker() {
   }
 
   try {
-    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-catalog-20261117`);
+    optimizerWorker = new Worker(`./src/optimizer/optimizer.worker.js?v=${encodeURIComponent(APP_VERSION)}-registered-20261118`);
   } catch (e) {
     optimizerWorker = null;
     const status = byId("optimizerStatus");
@@ -12460,6 +12532,10 @@ function renderIntegratedOptimizerResults() {
   const skillHeading = resultSettings.skillPlusTargetSkill ? `${resultSettings.skillPlusTargetSkill}強化` : "スキル強化合計";
 
   if (!integratedOptimizerResults.length) {
+    if (optimizerLastSummary?.timeLimitReached) {
+      el.innerHTML = `${diagnostics}<p>指定時間内に表示条件を満たす構成は見つかりませんでした。探索時間を延ばして再検索できます。</p>`;
+      return;
+    }
     el.innerHTML = `${diagnostics}<p class="small">条件内に収まる結果がありません。${showDps && optimizerRequiresMotionLimit(resultSettings) ? "モーション上限に届く通常短縮とスキル・アタック短縮の組み合わせが必要です。" : ""}自分のペット3匹上限（Buff以外のペットを含む）、バフ枠上限、各ステータス上限、競合グループ、装備同士の競合、候補の使用状況を見直してください。</p>`;
     return;
   }
@@ -12467,7 +12543,7 @@ function renderIntegratedOptimizerResults() {
   const body = integratedOptimizerResults.map((r, i) => {
     const m = r.metrics;
     const label = r.sourceLabel || (r.currentIncluded ? "現在ON/自動" : "自動探索");
-    const rankText = r.currentConfig && r.baselineReference ? "基準" : (i + 1);
+    const rankText = r.currentConfig && (r.baselineReference || r.baselineInvalid) ? "基準" : (i + 1);
     const reasonLines = [];
     if (r.currentConfig) reasonLines.push("手動ON構成");
     (r.baselineReasons || []).forEach(x => reasonLines.push(x));
@@ -12482,12 +12558,12 @@ function renderIntegratedOptimizerResults() {
       <td class="optimizerRank">${escapeHtml(rankText)}</td>
       <td class="optimizerSourceCell">${escapeHtml(label)}${sourceNote}</td>
       ${showSkillPlus ? `<td class="num" title="${escapeHtml(globalThis.MOESkillPlusV21?.summary(m.skillPlusTotals || {}) || "")}">${fmt(m.skillPlusScore || 0,1)}</td>` : ""}
-      ${showDps ? `<td class="num">${m.attackDps?.optimizationSupported && !r.baselineInvalid ? fmt(m.attackDps.continuousDps,1) : "条件未達"}</td>
+      ${showDps ? `<td class="num">${m.attackDps?.optimizationSupported && !r.baselineInvalid ? fmt(m.sustainedAttack?.averageDps??m.attackDps.continuousDps,1) : "条件未達"}${m.sustainedAttack?.supported?`<br><small>${fmt(m.sustainedAttack.seconds/60,1)}分の総ダメージ ${fmt(m.sustainedAttack.totalDamage,0)} / 更新停止 ${fmt(m.sustainedAttack.downtimeSeconds,1)}秒</small>`:''}</td>
       <td class="num">${m.attackDps?.supported ? `${fmt(m.attackDps.periodSec,1)}秒 / ${fmt(m.attackDps.attacksPerMinute,1)}回/分${m.attackDps.delaySec <= m.attackDps.motionLockSec ? "（上限到達）" : "（上限未到達）"}` : "未対応"}</td>` : ""}
       <td class="num">${damageValueText(m)}</td>
       <td class="num">${fmt(m.atk,1)}</td>
       <td class="num">${fmt(m.stats.magic,1)}</td>
-      <td class="num">${m.slots.total}/24</td>
+      <td class="num">${m.slots.total}/${escapeHtml(resultSettings.maxSlots ?? 24)}</td>
       <td class="optimizerList">${escapeHtml(extraStatsSummary(m.extraStats || {}).concat(optimizerAttackDelayBResultText(m, resultSettings)).filter(Boolean).join(" / ") || "-")}</td>
       <td class="optimizerList">${escapeHtml(optimizerEquipmentSummaryByIdx(r.equipmentIdxs, m))}</td>
       <td class="optimizerList">${escapeHtml(optimizerBuffSummaryByIdx(r.compositeIdxs))}</td>
@@ -12495,7 +12571,10 @@ function renderIntegratedOptimizerResults() {
     </tr>`;
   }).join("");
 
-  el.innerHTML = `${diagnostics}<table>
+  const comparisonNote = optimizerLastSummary?.timeLimitReached && resultSettings.onlyBetterThanCurrent &&
+    integratedOptimizerResults.every(r => r.currentConfig)
+    ? "<p>指定時間内に現在構成を上回る候補は見つかりませんでした。</p>" : "";
+  el.innerHTML = `${comparisonNote}${diagnostics}<table>
     <thead><tr><th>順位</th><th>種別</th>${showSkillPlus ? `<th>${escapeHtml(skillHeading)}</th>` : ""}${showDps ? "<th>DPS</th><th>攻撃間隔・回数</th>" : ""}<th>ダメージ</th><th>攻撃力</th><th>魔力</th><th>枠</th><th>追加ステータス</th><th>装備</th><th>装備以外Buff</th><th>適用</th></tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -15715,7 +15794,7 @@ function ensureOptimizerCoreLoaded() {
 
   optimizerCoreLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "./src/optimizer/core.js?v=20261103-dps-motion-required";
+    script.src = "./src/optimizer/core.js?v=20261118-registered-search";
     script.dataset.optimizerCore = "1";
     script.onload = () => {
       if (typeof runOptimizerCore === "function") resolve();

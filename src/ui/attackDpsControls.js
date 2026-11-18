@@ -18,6 +18,7 @@ function setAttackDpsField(key, value, type="number") {
     cfg[key] = Number.isFinite(n) ? n : 0;
   }
   bindAttackDpsControls();
+  if (byId('attackDpsSustainResult')) byId('attackDpsSustainResult').textContent='条件を変更しました。再計算してください。';
   calc();
 }
 
@@ -110,6 +111,7 @@ function bindAttackDpsControls() {
   bindNumber("attackDpsNonCancelMotionFrames", "nonCancelMotionFrames");
   bindNumber("attackDpsFps", "fps");
   bindNumber("attackDpsSimSeconds", "simSeconds");
+  bindNumber("attackDpsSustainMinutes", "sustainMinutes");
   bindNumber("attackDpsHitRatePct", "hitRatePct");
   bindSelect("attackDpsHitRateSource", "hitRateSource");
 
@@ -213,9 +215,56 @@ function createAttackDpsTab(panel) {
     </div>
 
     <div id="attackDpsResult" class="attackDpsResult"></div>
+    <section><h3>Buff更新を含めた継続火力</h3>
+      <label>戦闘時間（分）<input id="attackDpsSustainMinutes" type="number" min="0.1" max="60" step="0.1"></label>
+      <p>開始前にBuff済み。切れた順にかけ直し、更新中は攻撃を止めます。同時に切れた場合は登録順です。
+      効果量は登録時の条件で固定。装備効果・外枠補正は戦闘中も維持する前提です。</p>
+      <p>この比較のダメージ・命中率・ディレイは、現在の装備・Buffと計算タブの対象条件から自動計算します。</p>
+      <p>対象は「装備以外Buff」の登録行です。時間が不明なものは実測秒数を入力してください。
+      「常時維持」は他人・ペットなどから途切れず受けると仮定します。自動判定ではありません。</p>
+      <div id="attackDpsSustainBuffs"></div>
+      <button type="button" id="attackDpsSustainCalculate">更新込みの火力を計算</button>
+      <div id="attackDpsSustainResult" role="status"></div>
+      <p class="small">アタックの平均火力を攻撃可能な時間に換算します。発動の成否・MP/ST切れ・攻撃再開時の初撃待ちは含みません。
+      最適化では「更新込みアタックDPS」を選択すると、この条件で装備とBuffを比較します。</p>
+    </section>
   `;
   panel.appendChild(wrap);
   bindAttackDpsControls();
+}
+
+function renderSustainBuffControls(){
+  const host=byId('attackDpsSustainBuffs');if(!host)return;
+  const concentration=state.skillSim?.skills?.['集中力'];
+  const rows=state.composite||[],signature=JSON.stringify(rows.map(r=>[concentration,r.catalogRuleId,r.name,r.enabled,r.excluded,r.sustainMode,r.sustainDurationSeconds,r.sustainDowntimeSeconds,buffDurationSeconds(r)]));
+  if(host._signature===signature)return;
+  host._signature=signature;
+  host.innerHTML=rows.map((r,i)=>{
+    const p=MOESustainedAttack.profile(r),duration=buffDurationSeconds(r);
+    const cast=MOESustainedAttack.normalCastWindow(r.catalogRuleId,concentration);
+    return `<fieldset><legend>${escapeHtml(r.name)}${r.enabled&&!r.excluded?'':'（現在OFF／検索候補）'}</legend>
+      <label>更新方法<select data-sustain-row="${i}" data-sustain-key="sustainMode">${[['refresh','切れたらかけ直す（停止秒を指定）'],...(cast||p.mode==='normalCast'?[['normalCast','通常詠唱でかけ直す（集中力から計算）']]:[]),['once','開始時の1回だけ'],['maintained','常時維持（仮定）']].map(([key,label])=>`<option value="${key}" ${key===p.mode?'selected':''}>${label}</option>`).join('')}</select></label>
+      ${p.mode!=='maintained'?`<label>効果時間（秒・空欄で登録値）<input type="number" min="0.1" step="0.1" data-sustain-row="${i}" data-sustain-key="sustainDurationSeconds" value="${p.duration??''}" placeholder="${duration>0?duration:'不明'}"></label>`:''}
+      ${p.mode==='normalCast'&&cast?`<p>集中力 ${fmt(concentration,1)} ／ 1回の攻撃停止 約${fmt(cast.seconds,1)}秒。立ち詠唱・詠唱速度補正なし・中断なしの条件です。</p>`:''}
+      ${p.mode==='refresh'?`<label>かけ直しで攻撃を止める時間（秒）<input type="number" min="0" step="0.1" data-sustain-row="${i}" data-sustain-key="sustainDowntimeSeconds" value="${p.downtime??''}" placeholder="実測値を入力"></label>`:''}</fieldset>`;
+  }).join('')||'<p>装備以外Buffの登録はありません。</p>';
+  host.onchange=e=>{
+    const row=rows[Number(e.target.dataset.sustainRow)],key=e.target.dataset.sustainKey;
+    if(!row||!['sustainMode','sustainDurationSeconds','sustainDowntimeSeconds'].includes(key))return;
+    if(key==='sustainMode')row[key]=e.target.value;
+    else {const value=MOESustainedAttack.number(e.target.value);if(value===null)delete row[key];else row[key]=value;}
+    byId('attackDpsSustainResult').textContent='条件を変更しました。再計算してください。';
+    calc();renderSustainBuffControls();
+  };
+}
+
+function calculateSustainFromUi(){
+  const target=byId('attackDpsSustainResult');
+  try{
+    const cfg=attackDpsState(),r=computeSustainedAttack(state,collectInputs(),cfg);
+    target.innerHTML=r.supported?`<p>${fmt(r.seconds/60,1)}分の期待総ダメージ <b>${fmt(r.totalDamage,0)}</b> ／ 更新込みDPS <b>${fmt(r.averageDps,1)}</b></p><p>攻撃停止 ${fmt(r.downtimeSeconds,1)}秒 ／ 更新完了 ${r.refreshes.reduce((n,b)=>n+b.count,0)}回</p>`:
+      '<p>計算に必要な条件：</p><ul>'+r.reasons.map(x=>'<li>'+escapeHtml(x)+'</li>').join('')+'</ul>';
+  }catch(error){target.textContent='計算できませんでした：'+error.message;}
 }
 
 function copyCurrentToAttackDps() {

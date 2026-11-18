@@ -289,3 +289,8 @@ tests/catalogUpdate20261110.test.cjs
 src/data/generated/catalogUpdate20261117.generated.js
 tests/catalogUpdate20261117.test.cjs
 tests/combatUpdate20261117.test.cjs
+src/calc/sustainedAttack.js
+tests/optimizerSustainedAttack.test.cjs
+tests/optimizerIntegratedBudget.test.cjs
+tests/optimizerObjectiveVisibility.test.cjs
+tests/sustainedAttack.test.cjs

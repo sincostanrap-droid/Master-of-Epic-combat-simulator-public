@@ -37,10 +37,11 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     resolvedCapture.normalizedEquipment = normalizedEquipment;
     resolvedCapture.resolvedBuffState = st;
   }
-  const skillPlusTotals = skillPlusTotalsFromResolvedState(st);
+  const resolvedRows = normalizeCompositeRows(st.composite);
+  const skillPlusTotals = skillPlusTotalsFromResolvedState(st, resolvedRows);
   const attackDelayBSources = attackDelayBSourcesFromResolvedState(st);
   const orderedState = st;
-  st = expandCompositeState(st);
+  st = expandCompositeState(st, resolvedRows);
   const raceCoeff = RACE_COEFFS[inputs.raceSelect] ?? parseFloat(inputs.raceCoeff) ?? 0.20;
   const spirit = parseFloat(inputs.spirit) || 0;
   const magicCoeff = RACE_MAGIC_COEFFS[inputs.raceSelect] ?? 1.00;
@@ -60,7 +61,7 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     raw:armorRows.reduce((s,r)=>s+r.raw,0),effective:armorRows.reduce((s,r)=>s+r.effective,0),
     additions:armorRows.reduce((s,r)=>s+r.addition,0)};
   extraStats.extraAC = armorAC.effective + armorAC.additions;
-  normalizeCompositeRows(st.composite).filter(r => r.enabled && !r.excluded).forEach(r => addExtraStatsInto(extraStats, r, "buff"));
+  resolvedRows.filter(r => r.enabled && !r.excluded).forEach(r => addExtraStatsInto(extraStats, r, "buff"));
   armorAC.buff = extraStats.extraAC - armorAC.effective - armorAC.additions;
   armorAC.percentage = extraStats.extraACPct;
 
@@ -123,7 +124,7 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
       hp:derived("hp"),mp:derived("mp"),st:derived("st"),weight:derived("weight"),
       defense:f(armorAC.base+armorAC.effective+armorAC.additions),avoid:derived("avoid"),
       fireRes:derived("resist"),waterRes:derived("resist"),earthRes:derived("resist"),windRes:derived("resist"),neutralRes:derived("resist")},
-    equipment:equipmentRows,rows:normalizeCompositeRows(orderedState.composite),
+    equipment:equipmentRows,rows:resolvedRows,
     flat:normalizeFlatRows(orderedState),pct:orderedState.pct || [],attackCap:+inputs.atkCap,
     attackReference:values=>addConversions(Math.max(0,values.attackCache,ordinaryAttack(values.attackCache)),conversionAt(values)),
     hitReference:values=>Math.max(0,values.hitCache,hitWithMagic(values).after)
@@ -224,14 +225,14 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
     hitCount:inputs.techniqueHitCount==null||inputs.techniqueHitCount===''?'':+inputs.techniqueHitCount,
     finalCap:Math.max(0,+inputs.finalCap||0),
     hitContexts:(technique.hits||[technique]).map(hit=>({skill:skill(hit.skillName),
-      ...globalThis.MOE_TECHNIQUE_DAMAGE.bonuses(normalizeCompositeRows(orderedState.composite),hit)})),
+      ...globalThis.MOE_TECHNIQUE_DAMAGE.bonuses(resolvedRows,hit)})),
     randomPower:inputs.techniqueRandomPower==null||inputs.techniqueRandomPower===''?'':+inputs.techniqueRandomPower,
     specialTarget:inputs.techniqueSpecialTarget===true||inputs.techniqueSpecialTarget==='true',
     ...(globalThis.MOE_TECHNIQUE_DAMAGE.isRotation(technique)?{rotationTargetProfile:inputs.rotationTargetProfile||''}:{}),
     // Fixed-base skill hit has its own cache; ordinary weapon hit is not it.
     statCache:{91:0,89:extraStats.extraKickHit,90:extraStats.extraFangHit,
       94:extraStats.extraKickAttack,95:extraStats.extraFangAttack},
-    ...globalThis.MOE_TECHNIQUE_DAMAGE.bonuses(normalizeCompositeRows(orderedState.composite),technique)
+    ...globalThis.MOE_TECHNIQUE_DAMAGE.bonuses(resolvedRows,technique)
   } : null;
   const combatCatalog=inputs.combatCatalogScenario?globalThis.MOE_COMBAT_CATALOG_ENGINE:null;
   if(combatCatalog&&techniqueContext)techniqueContext=combatCatalog.damageContext(inputs.combatCatalogScenario,inputs.combatCatalogTarget||'A',technique,techniqueContext);
@@ -249,13 +250,13 @@ function computeMetrics(st, inputs, resolvedCapture=null, preparedEvaluation=nul
   const finalCap = parseFloat(inputs.finalCap) || 0;
   // Technique caps have already been applied to each hit, before summation.
   const finalDamage = !technique && finalCap > 0 ? Math.min(rawDamage, finalCap) : rawDamage;
-  const slots = buffSlotCountForState(st);
+  const slots = buffSlotCountForState(st, resolvedRows);
   const followupApi=globalThis.MOE_ATTACK_FOLLOWUPS;
-  const attackFollowups=followupApi?.calculate(followupApi.collect(selectedWeapon,normalizeCompositeRows(orderedState.composite)),
+  const attackFollowups=followupApi?.calculate(followupApi.collect(selectedWeapon,resolvedRows),
     {attackType:inputs.attackType,technique,finalCap:Math.max(0,finalCap)}) || {rows:[],expected:0,complete:true,dpsComplete:true};
   const attackExpectedDamage=finalDamage==null ? null : finalDamage+attackFollowups.expected;
   const unsupportedBuffIds=new Set((globalThis.MOE_PLAYER_CATALOG_ADDITIONS?.buffs||[]).map(b=>b.id));
-  const unsupportedBuffs=normalizeCompositeRows(orderedState.composite)
+  const unsupportedBuffs=resolvedRows
     .filter(row=>row.enabled&&!row.excluded&&(globalThis.MOE_WIKI_PLAYER_EFFECTS?.incomplete(row)??unsupportedBuffIds.has(row.catalogRuleId))).map(row=>row.name);
 
   return {
@@ -279,11 +280,11 @@ function slotRowName(row, fallback) {
   return group ? `${name} [${group}]` : name;
 }
 /* バフ24枠の使用数を数える。装備以外Buffは効果が複数あっても1行=1枠。 */
-function buffSlotCountForState(st) {
+function buffSlotCountForState(st, rows=normalizeCompositeRows(st.composite)) {
   const details = [
     ["マスタリー", (st.other || []).filter(r => r.source === "skillSimMastery" && r.enabled && !r.excluded).flatMap(r =>
       Array.from({length:Math.max(0, Math.trunc(r.buffSlotCost ?? 1))}, () => `${r.name}（${r.note}）`))],
-    ["装備外", normalizeCompositeRows(st.composite).filter(r => r.enabled && !r.excluded && r.slot && compositeHasEffect(r)).map(r => `${slotRowName(r, "装備以外Buff")}（${compositeEffectText(r)}）`)],
+    ["装備外", rows.filter(r => r.enabled && !r.excluded && r.slot && compositeHasEffect(r)).map(r => `${slotRowName(r, "装備以外Buff")}（${compositeEffectText(r)}）`)],
     ["割合", (st.pct || []).filter(r => r.enabled && !r.excluded && r.slot).map(r => slotRowName(r, "割合Buff"))],
     ["実数", normalizeFlatRows(st).filter(r => r.enabled && !r.excluded && r.slot).map(r => slotRowName(r, "実数加算"))],
     ["変換", (st.conv || []).filter(r => r.enabled && !r.excluded && r.slot).map(r => slotRowName(r, "ステータス変換"))],

@@ -110,6 +110,8 @@ function shareCompactEquipmentRow(row) {
 function shareCompactCompositeRow(row) {
   const r = normalizeCompositeRows([row])[0] || {};
   const out = {enabled:true};
+  if(r.sustainMode)out.sustainMode=r.sustainMode;
+  for(const key of ['sustainDurationSeconds','sustainDowntimeSeconds'])if(r[key]!=null)out[key]=r[key];
   if(r.fixed)out.fixed=true;
   shareSetIfString(out,'stackRule',r.stackRule);
   shareSetIfString(out,'autoStackGroup',r.autoStackGroup);

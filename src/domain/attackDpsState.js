@@ -61,6 +61,7 @@ function defaultAttackDpsState() {
     nonCancelMotionFrames: 90,
     fps: 60,
     simSeconds: 30,
+    sustainMinutes: 3,
     hitRateSource: "current",
     hitRatePct: 100
   };
@@ -83,6 +84,7 @@ function normalizeAttackDpsState(raw) {
   });
   out.fps = Math.max(1, out.fps || d.fps);
   out.simSeconds = Math.max(1, out.simSeconds || d.simSeconds);
+  out.sustainMinutes = Number.isFinite(+out.sustainMinutes) && +out.sustainMinutes>0 ? Math.min(60,+out.sustainMinutes) : d.sustainMinutes;
   out.hitRatePct = Math.max(0, Math.min(100, out.hitRatePct));
   out.manualAttackBonus = out.manualAttackBonus !== false;
   out.criticalCancel = out.criticalCancel !== false;

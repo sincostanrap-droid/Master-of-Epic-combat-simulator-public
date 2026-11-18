@@ -98,4 +98,7 @@ function renderAttackDpsTab(metrics=null) {
   }
   bindAttackDpsControls();
   renderAttackDpsResult(metrics);
+  renderSustainBuffControls();
+  byId('attackDpsSustainCalculate').onclick=calculateSustainFromUi;
+  byId('attackDpsSustainResult').textContent='現在の条件で「更新込みの火力を計算」を押してください。';
 }

@@ -16,7 +16,8 @@ importScripts(
   "../calc/clientCombatReference.js?v=20261007-damage-hit",
   "../calc/damagePrediction.js?v=20261008-attack-special-2",
   "../domain/petParty.js?v=20261103-pet-party",
-  "../domain/attackDpsState.js?v=20261103-dps-motion-required",
+  "../domain/attackDpsState.js?v=20261118-sustain",
+  "../calc/sustainedAttack.js?v=20261118",
   "../domain/catalogData.js?v=20261117",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",
@@ -46,9 +47,9 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261117-combat",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261117-combat",
-  "../calc/core.js?v=20261117-combat",
-  "./core.js?v=20261117-combat"
+  "../main.js?v=20261118-registered-search",
+  "../calc/core.js?v=20261118-registered-search",
+  "./core.js?v=20261118-registered-search"
 );
 
 self.onmessage = event => {
