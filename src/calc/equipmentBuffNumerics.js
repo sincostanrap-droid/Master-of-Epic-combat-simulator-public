@@ -5,7 +5,8 @@
   common?require('../data/generated/catalogUpdate20261027.generated.js'):root.MOE_CATALOG_UPDATE_20261027,
   common?require('../data/generated/catalogUpdate20261104.generated.js'):root.MOE_CATALOG_UPDATE_20261104,
   common?require('../data/generated/catalogUpdate20261110.generated.js'):root.MOE_CATALOG_UPDATE_20261110,
-  common?require('../data/generated/catalogUpdate20261117.generated.js'):root.MOE_CATALOG_UPDATE_20261117].filter(Boolean);
+  common?require('../data/generated/catalogUpdate20261117.generated.js'):root.MOE_CATALOG_UPDATE_20261117,
+  common?require('../data/generated/catalogUpdate20261124.generated.js'):root.MOE_CATALOG_UPDATE_20261124].filter(Boolean);
  const data={records:sources.flatMap(source=>source.records)};
  const records=new Map(data.records.map(r=>[r.id,r])),f=Math.fround;
  const id=row=>Number(row.clientBuffDefinitionId||String(row.catalogRuleId||'').replace(/^technic-/,''));

@@ -9,7 +9,7 @@ for(const worker of [false,true]){
  const items=p.equipmentCatalogItems(),row=id=>json(p.catalogEquipmentToRow(items.find(r=>r.officialId===id)));
  eq(p.MOE_EQUIPMENT_CATALOG_META.gameUpdateDate,'2026-11-17');
  for(const id of [23542,23549,23550,23551])eq(items.filter(r=>r.officialId===id).length,1);
- for(const id of [23544,23552,23553])eq(items.filter(r=>r.officialId===id).length,0);
+ for(const id of [23544,23552,23553])eq(p.MOE_CATALOG_UPDATE_20261117.equipment.filter(r=>r.officialId===id).length,0);
  const halo=row(23542),cat=row(23549),wear=row(23550),belt=row(23551);
  eq([halo.slot,halo.magic,halo.extraMagicDelay,halo.extraNeutralRes],['装飾: 頭',3,-2,10]);
  eq([cat.slot,cat.magic,cat.extraMP],['装飾: 胸',5,15]);

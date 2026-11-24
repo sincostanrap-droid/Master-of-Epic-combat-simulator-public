@@ -8,7 +8,7 @@
 // Legacy calculation/catalog scripts use window for data globals only.
 // No document or DOM shim is provided: UI initializers must stay guarded.
 self.window = self;
-importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../data/generated/catalogUpdate20261020.generated.js?v=20261020-raid', '../data/generated/catalogUpdate20261027.generated.js?v=20261027', '../data/generated/catalogUpdate20261104.generated.js?v=20261104', '../data/generated/catalogUpdate20261110.generated.js?v=20261110', '../data/generated/catalogUpdate20261117.generated.js?v=20261117', '../calc/equipmentBuffNumerics.js?v=20261117', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
+importScripts('../data/generated/equipmentAdditions20261013.generated.js?v=20261014-equipment', '../data/generated/catalogUpdate20261020.generated.js?v=20261020-raid', '../data/generated/catalogUpdate20261027.generated.js?v=20261027', '../data/generated/catalogUpdate20261104.generated.js?v=20261104', '../data/generated/catalogUpdate20261110.generated.js?v=20261110', '../data/generated/catalogUpdate20261117.generated.js?v=20261117', '../data/generated/catalogUpdate20261124.generated.js?v=20261124', '../calc/equipmentBuffNumerics.js?v=20261124', '../calc/combatRangeNumerics.js?v=20261014-gaps12', '../calc/combatPassiveNumerics.js?v=20261014-gaps13');
 
 importScripts(
   "../calc/clientWeaponReference.js?v=20261006-product-formulas",
@@ -18,7 +18,7 @@ importScripts(
   "../domain/petParty.js?v=20261103-pet-party",
   "../domain/attackDpsState.js?v=20261118-sustain",
   "../calc/sustainedAttack.js?v=20261118",
-  "../domain/catalogData.js?v=20261117",
+  "../domain/catalogData.js?v=20261124",
   "../domain/catalogSearch.js?v=20261009-weapon-procs",
   "../data/generated/masteries.generated.js?v=20261008-effect-calculation",
   "../data/generated/attackTechniques.generated.js?v=20261008-effect-calculation",
@@ -47,7 +47,7 @@ importScripts(
   "../calc/techniqueDamage.js?v=20261117-combat",
   "../calc/clientPhysicalBuildBuffReference.js?v=20261011-catalog-engine",
   "../calc/combatCatalogEngine.js?v=20261020-raid",
-  "../main.js?v=20261118-registered-search",
+  "../main.js?v=20261124",
   "../calc/core.js?v=20261118-registered-search",
   "./core.js?v=20261118-registered-search"
 );

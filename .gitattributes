@@ -237,3 +237,5 @@
 /src/data/generated/petBuffInputs.generated.js -text
 /src/calc/petBuffFormulas.js -text
 /src/calc/sustainedAttack.js -text
+/src/data/generated/catalogUpdate20261124.generated.js -text
+/src/data/generated/combatNumericPages/059.json -text

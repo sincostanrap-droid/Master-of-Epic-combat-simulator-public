@@ -13,7 +13,8 @@ const CATALOG_SCRIPT_URLS = [
   "src/data/generated/catalogUpdate20261027.generated.js?v=20261027",
   "src/data/generated/catalogUpdate20261104.generated.js?v=20261104",
   "src/data/generated/catalogUpdate20261110.generated.js?v=20261110",
-  "src/data/generated/catalogUpdate20261117.generated.js?v=20261117"
+  "src/data/generated/catalogUpdate20261117.generated.js?v=20261117",
+  "src/data/generated/catalogUpdate20261124.generated.js?v=20261124"
 ];
 let catalogScriptsPromise = null;
 let equipmentBuffRuntimeScriptsPromise = null;
